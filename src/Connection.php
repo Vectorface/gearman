@@ -173,7 +173,7 @@ class Connection
             );
         }
 
-        self::$waiting[(int) $socket] = [];
+        self::$waiting[spl_object_id($socket)] = [];
 
         return $socket;
     }
