@@ -1,5 +1,6 @@
 <?php
-namespace MHlavac\Gearman;
+
+namespace Vectorface\Gearman;
 
 /**
  * Interface for Danga's Gearman job scheduling system.

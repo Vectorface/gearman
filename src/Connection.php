@@ -1,5 +1,6 @@
 <?php
-namespace MHlavac\Gearman;
+
+namespace Vectorface\Gearman;
 
 /**
  * Interface for Danga's Gearman job scheduling system.
@@ -21,7 +22,7 @@ namespace MHlavac\Gearman;
  * @link      http://pear.php.net/package/Net_Gearman
  * @link      http://www.danga.com/gearman/
  */
-use MHlavac\Gearman\Exception\CouldNotConnectException;
+use Vectorface\Gearman\Exception\CouldNotConnectException;
 
 /**
  * The base connection class.
@@ -42,58 +43,58 @@ class Connection
      * A list of valid Gearman commands.
      *
      * This is a list of valid Gearman commands (the key of the array), their
-     * integery type (first key in second array) used in the binary header, and
+     * integer type (first key in second array) used in the binary header, and
      * the arguments / order of arguments to send/receive.
      *
      * @var array
      *
-     * @see MHlavac\Gearman\Connection::$magic
-     * @see MHlavac\Gearman\Connection::connect()
+     * @see \Vectorface\Gearman\Connection::$magic
+     * @see \Vectorface\Gearman\Connection::connect()
      */
-    protected static $commands = array(
-        'can_do' => array(1, array('func')),
-        'can_do_timeout' => array(23, array('func', 'timeout')),
-        'cant_do' => array(2, array('func')),
-        'reset_abilities' => array(3, array()),
-        'set_client_id' => array(22, array('client_id')),
-        'pre_sleep' => array(4, array()),
-        'noop' => array(6, array()),
-        'submit_job' => array(7, array('func', 'uniq', 'arg')),
-        'submit_job_high' => array(21, array('func', 'uniq', 'arg')),
-        'submit_job_bg' => array(18, array('func', 'uniq', 'arg')),
-        'submit_job_epoch' => array(36, array('func', 'uniq', 'epoch','arg')),
-        'submit_job_high_bg' => array(32, array('func', 'uniq', 'arg')),
-        'submit_job_low' => array(33, array('func', 'uniq', 'arg')),
-        'submit_job_low_bg' => array(34, array('func', 'uniq', 'arg')),
-        'job_created' => array(8, array('handle')),
-        'grab_job' => array(9, array()),
-        'no_job' => array(10, array()),
-        'job_assign' => array(11, array('handle', 'func', 'arg')),
-        'work_status' => array(12, array('handle', 'numerator', 'denominator')),
-        'work_complete' => array(13, array('handle', 'result')),
-        'work_fail' => array(14, array('handle')),
-        'get_status' => array(15, array('handle')),
-        'status_res' => array(20, array('handle', 'known', 'running', 'numerator', 'denominator')),
-        'echo_req' => array(16, array('text')),
-        'echo_res' => array(17, array('text')),
-        'error' => array(19, array('err_code', 'err_text')),
-        'all_yours' => array(24, array()),
-    );
+    protected static $commands = [
+        'can_do' => [1, ['func']],
+        'can_do_timeout' => [23, ['func', 'timeout']],
+        'cant_do' => [2, ['func']],
+        'reset_abilities' => [3, []],
+        'set_client_id' => [22, ['client_id']],
+        'pre_sleep' => [4, []],
+        'noop' => [6, []],
+        'submit_job' => [7, ['func', 'uniq', 'arg']],
+        'submit_job_high' => [21, ['func', 'uniq', 'arg']],
+        'submit_job_bg' => [18, ['func', 'uniq', 'arg']],
+        'submit_job_epoch' => [36, ['func', 'uniq', 'epoch','arg']],
+        'submit_job_high_bg' => [32, ['func', 'uniq', 'arg']],
+        'submit_job_low' => [33, ['func', 'uniq', 'arg']],
+        'submit_job_low_bg' => [34, ['func', 'uniq', 'arg']],
+        'job_created' => [8, ['handle']],
+        'grab_job' => [9, []],
+        'no_job' => [10, []],
+        'job_assign' => [11, ['handle', 'func', 'arg']],
+        'work_status' => [12, ['handle', 'numerator', 'denominator']],
+        'work_complete' => [13, ['handle', 'result']],
+        'work_fail' => [14, ['handle']],
+        'get_status' => [15, ['handle']],
+        'status_res' => [20, ['handle', 'known', 'running', 'numerator', 'denominator']],
+        'echo_req' => [16, ['text']],
+        'echo_res' => [17, ['text']],
+        'error' => [19, ['err_code', 'err_text']],
+        'all_yours' => [24, []],
+    ];
 
     const DEFAULT_PORT = 4730;
 
     /**
-     * The reverse of MHlavac\Gearman\Connection::$commands.
+     * The reverse of \Vectorface\Gearman\Connection::$commands.
      *
-     * This is the same as the MHlavac\Gearman\Connection::$commands array only
+     * This is the same as the \Vectorface\Gearman\Connection::$commands array only
      * it's keyed by the magic (integer value) value of the command.
      *
      * @var array
      *
-     * @see MHlavac\Gearman\Connection::$commands
-     * @see MHlavac\Gearman\Connection::connect()
+     * @see \Vectorface\Gearman\Connection::$commands
+     * @see \Vectorface\Gearman\Connection::connect()
      */
-    protected static $magic = array();
+    protected static $magic = [];
 
     /**
      * Tasks waiting for a handle.
@@ -105,7 +106,7 @@ class Connection
      * @var array
      * @static
      */
-    public static $waiting = array();
+    public static $waiting = [];
 
     /**
      * Is PHP's multibyte overload turned on?
@@ -126,33 +127,31 @@ class Connection
      * Connect to Gearman.
      *
      * Opens the socket to the Gearman Job server. It throws an exception if
-     * a socket error occurs. Also populates MHlavac\Gearman\Connection::$magic.
+     * a socket error occurs. Also populates \Vectorface\Gearman\Connection::$magic.
      *
      * @param string $host    e.g. 127.0.0.1 or 127.0.0.1:7003
      * @param int    $timeout Timeout in milliseconds
      *
-     * @throws \MHlavac\Gearman\Exception when it can't connect to server
-     *
      * @return resource A connection to a Gearman server
      *
-     * @see MHlavac\Gearman\Connection::$waiting
-     * @see MHlavac\Gearman\Connection::$magic
-     * @see MHlavac\Gearman\Connection::$commands
+     * @throws Exception when it can't connect to server
+     *
+     * @see \Vectorface\Gearman\Connection::$waiting
+     * @see \Vectorface\Gearman\Connection::$magic
+     * @see \Vectorface\Gearman\Connection::$commands
      */
     public static function connect($host = 'localhost', $timeout = 2000)
     {
         if (!count(self::$magic)) {
             foreach (self::$commands as $cmd => $i) {
-                self::$magic[$i[0]] = array($cmd, $i[1]);
+                self::$magic[$i[0]] = [$cmd, $i[1]];
             }
         }
 
-        $err = '';
-        $errno = 0;
         $port = self::DEFAULT_PORT;
 
         if (strpos($host, ':')) {
-            list($host, $port) = explode(':', $host);
+            [$host, $port] = explode(':', $host);
         }
 
         $start = microtime(true);
@@ -174,7 +173,7 @@ class Connection
             );
         }
 
-        self::$waiting[(int) $socket] = array();
+        self::$waiting[(int) $socket] = [];
 
         return $socket;
     }
@@ -191,19 +190,18 @@ class Connection
      * @param string   $command Command to send (e.g. 'can_do')
      * @param array    $params  Params to send
      *
-     * @see MHlavac\Gearman\Connection::$commands, MHlavac\Gearman\Connection::$socket
+     * @throws Exception on invalid command or unable to write
      *
-     * @throws \MHlavac\Gearman\Exception on invalid command or unable to write
+     * @see \Vectorface\Gearman\Connection::$commands, \Vectorface\Gearman\Connection::$socket
      *
-     * @return bool
      */
-    public static function send($socket, $command, array $params = array())
+    public static function send($socket, $command, array $params = [])
     {
         if (!isset(self::$commands[$command])) {
             throw new Exception('Invalid command: ' . $command);
         }
 
-        $data = array();
+        $data = [];
         foreach (self::$commands[$command][1] as $field) {
             if (isset($params[$field])) {
                 $data[] = $params[$field];
@@ -222,16 +220,17 @@ class Connection
         $written = 0;
         $error = false;
         do {
-            $check = @socket_write($socket,
-                                   self::subString($cmd, $written, $cmdLength),
-                                   $cmdLength);
+            $check = @socket_write(
+                $socket,
+                self::subString($cmd, $written, $cmdLength),
+                $cmdLength
+            );
 
             if ($check === false) {
-                if (socket_last_error($socket) == SOCKET_EAGAIN or
-                    socket_last_error($socket) == SOCKET_EWOULDBLOCK or
-                    socket_last_error($socket) == SOCKET_EINPROGRESS) {
-                    // skip this is okay
-                } else {
+                if (socket_last_error($socket) != SOCKET_EAGAIN
+                    && socket_last_error($socket) != SOCKET_EWOULDBLOCK
+                    && socket_last_error($socket) != SOCKET_EINPROGRESS
+                ) {
                     $error = true;
                     break;
                 }
@@ -254,11 +253,11 @@ class Connection
      *
      * @param resource $socket The socket to read from
      *
-     * @see MHlavac\Gearman\Connection::$magic
-     *
-     * @throws \MHlavac\Gearman\Exception connection issues or invalid responses
-     *
      * @return array Result read back from Gearman
+     *@throws Exception connection issues or invalid responses
+     *
+     * @see \Vectorface\Gearman\Connection::$magic
+     *
      */
     public static function read($socket)
     {
@@ -274,7 +273,7 @@ class Connection
         }
 
         if (self::stringLength($header) == 0) {
-            return array();
+            return [];
         }
         $resp = @unpack('a4magic/Ntype/Nlen', $header);
 
@@ -283,12 +282,10 @@ class Connection
         }
 
         if (!isset(self::$magic[$resp['type']])) {
-            throw new Exception(
-                'Invalid response magic returned: ' . $resp['type']
-            );
+            throw new Exception("Invalid response magic returned: {$resp['type']}");
         }
 
-        $return = array();
+        $return = [];
         if ($resp['len'] > 0) {
             $data = '';
             while (self::stringLength($data) < $resp['len']) {
@@ -307,14 +304,14 @@ class Connection
                 $return['err_text'] = 'Unknown error; see error code.';
             }
 
-            throw new Exception(
-                $return['err_text'], $return['err_code']
-            );
+            throw new Exception($return['err_text'], $return['err_code']);
         }
 
-        return array('function' => self::$magic[$resp['type']][0],
-                     'type' => $resp['type'],
-                     'data' => $return, );
+        return [
+            'function' => self::$magic[$resp['type']][0],
+            'type' => $resp['type'],
+            'data' => $return,
+        ];
     }
 
     /**
@@ -323,13 +320,13 @@ class Connection
      * @param resource $socket  The socket to read from
      * @param float    $timeout The timeout for the read
      *
-     * @throws \MHlavac\Gearman\Exception on timeouts
-     *
      * @return array
+     *@throws Exception on timeouts
+     *
      */
     public static function blockingRead($socket, $timeout = 500.0)
     {
-        static $cmds = array();
+        static $cmds = [];
 
         $tv_sec = floor(($timeout % 1000));
         $tv_usec = ($timeout * 1000);
@@ -342,7 +339,7 @@ class Connection
 
             $write = null;
             $except = null;
-            $read = array($socket);
+            $read = [$socket];
 
             socket_select($read, $write, $except, $tv_sec, $tv_usec);
             foreach ($read as $s) {
@@ -386,7 +383,7 @@ class Connection
      *
      * @return int Size of string
      *
-     * @see MHlavac\Gearman\Connection::$multiByteSupport
+     * @see \Vectorface\Gearman\Connection::$multiByteSupport
      */
     public static function stringLength($value)
     {
@@ -410,7 +407,7 @@ class Connection
      *
      * @return string Portion of $str specified by $start and $length
      *
-     * @see MHlavac\Gearman\Connection::$multiByteSupport
+     * @see \Vectorface\Gearman\Connection::$multiByteSupport
      * @link http://us3.php.net/mb_substr
      * @link http://us3.php.net/substr
      */
@@ -422,8 +419,7 @@ class Connection
 
         if (self::$multiByteSupport & 2) {
             return mb_substr($str, $start, $length, '8bit');
-        } else {
-            return substr($str, $start, $length);
         }
+        return substr($str, $start, $length);
     }
 }

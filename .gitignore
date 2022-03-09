@@ -3,3 +3,4 @@ tests/tests-config.php
 vendor
 composer.lock
 composer.phar
+.phpunit.result.cache

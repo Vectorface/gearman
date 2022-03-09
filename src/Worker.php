@@ -1,7 +1,9 @@
 <?php
-namespace MHlavac\Gearman;
 
-use MHlavac\Gearman\Job\JobException;
+namespace Vectorface\Gearman;
+
+use InvalidArgumentException;
+use Vectorface\Gearman\Job\JobException;
 
 /**
  * Interface for Danga's Gearman job scheduling system.
@@ -41,7 +43,7 @@ use MHlavac\Gearman\Job\JobException;
  * @version   Release: @package_version@
  *
  * @link      http://www.danga.com/gearman/
- * @see       MHlavac\Gearman\Job, MHlavac\Gearman\Connection
+ * @see       \Vectorface\Gearman\Job, \Vectorface\Gearman\Connection
  */
 class Worker implements ServerSetting
 {
@@ -53,37 +55,37 @@ class Worker implements ServerSetting
     /**
      * @var array Pool of connections to Gearman servers
      */
-    protected $connection = array();
+    protected $connection = [];
 
     /**
      * @var array Pool of retry connections
      */
-    protected $retryConn = array();
+    protected $retryConn = [];
 
     /**
-     * @var array[]
+     * @var string[]
      */
-    protected $functions = array();
+    protected $functions = [];
 
     /**
      * @var string[] List of gearman servers
      */
-    protected $servers = array();
+    protected $servers = [];
 
     /**
      * Callbacks registered for this worker.
      *
      * @var array
      *
-     * @see MHlavac\Gearman\Worker::JOB_START
-     * @see MHlavac\Gearman\Worker::JOB_COMPLETE
-     * @see MHlavac\Gearman\Worker::JOB_FAIL
+     * @see \Vectorface\Gearman\Worker::JOB_START
+     * @see \Vectorface\Gearman\Worker::JOB_COMPLETE
+     * @see \Vectorface\Gearman\Worker::JOB_FAIL
      */
-    protected $callback = array(
-        self::JOB_START => array(),
-        self::JOB_COMPLETE => array(),
-        self::JOB_FAIL => array(),
-    );
+    protected $callback = [
+        self::JOB_START => [],
+        self::JOB_COMPLETE => [],
+        self::JOB_FAIL => [],
+    ];
 
     /**
      * Callback types.
@@ -121,7 +123,7 @@ class Worker implements ServerSetting
 
         foreach ($servers as $server) {
             $explodedServer = explode(':', $server);
-            $port = isset($explodedServer[1]) ? $explodedServer[1] : null;
+            $port = $explodedServer[1] ?? null;
 
             $this->addServer($explodedServer[0], $port);
         }
@@ -133,7 +135,7 @@ class Worker implements ServerSetting
     {
         $host = trim($host);
         if (empty($host)) {
-            throw new \InvalidArgumentException("Invalid host '$host' given");
+            throw new InvalidArgumentException("Invalid host '$host' given");
         }
 
         if (null === $port) {
@@ -141,14 +143,14 @@ class Worker implements ServerSetting
         } else {
             $port = (int) $port;
             if (!$port > 0) {
-                throw new \InvalidArgumentException("Invalid port '$port' given");
+                throw new InvalidArgumentException("Invalid port '$port' given");
             }
         }
 
         $server = $host . ':' . $port;
 
         if (isset($this->servers[$server])) {
-            throw new \InvalidArgumentException("Server '$server' is already registered");
+            throw new InvalidArgumentException("Server '$server' is already registered");
         }
 
         $this->servers[$server] = true;
@@ -177,17 +179,17 @@ class Worker implements ServerSetting
      * @param callback $callback
      * @param int      $timeout
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      *
      * @return self
      */
     public function addFunction($functionName, $callback, $timeout = null)
     {
         if (isset($this->functions[$functionName])) {
-            throw new \InvalidArgumentException("Function $functionName is already registered");
+            throw new InvalidArgumentException("Function $functionName is already registered");
         }
 
-        $this->functions[$functionName] = array('callback' => $callback);
+        $this->functions[$functionName] = ['callback' => $callback];
         if (null !== $timeout) {
             $this->functions[$functionName]['timeout'] = $timeout;
         }
@@ -198,14 +200,14 @@ class Worker implements ServerSetting
     /**
      * @param string
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      *
      * @return self
      */
     public function unregister($functionName)
     {
         if (!isset($this->functions[$functionName])) {
-            throw new \InvalidArgumentException("Function $functionName is not registered");
+            throw new InvalidArgumentException("Function $functionName is not registered");
         }
 
         unset($this->functions[$functionName]);
@@ -218,13 +220,13 @@ class Worker implements ServerSetting
      */
     public function unregisterAll()
     {
-        $this->functions = array();
+        $this->functions = [];
 
         return $this;
     }
 
     /**
-     * @throws \MHlavac\Gearman\Exception
+     * @throws Exception
      */
     public function work($monitor = null)
     {
@@ -232,7 +234,7 @@ class Worker implements ServerSetting
         $this->registerFunctionsToOpenedConnections();
 
         if (!is_callable($monitor)) {
-            $monitor = array($this, 'stopWork');
+            $monitor = [$this, 'stopWork'];
         }
 
         $write = null;
@@ -278,7 +280,7 @@ class Worker implements ServerSetting
                         $this->connection[$s] = $conn;
                         $retryChange = true;
                         unset($this->retryConn[$s]);
-                        Connection::send($conn, 'set_client_id', array('client_id' => $this->id));
+                        Connection::send($conn, 'set_client_id', ['client_id' => $this->id]);
                     } catch (Exception $e) {
                         $this->retryConn[$s] = $currentTime;
                     }
@@ -300,12 +302,15 @@ class Worker implements ServerSetting
         }
     }
 
+    /**
+     * @throws Exception
+     */
     private function connectToAllServers()
     {
         foreach ($this->getServers() as $server) {
             try {
                 $connection = Connection::connect($server);
-                Connection::send($connection, 'set_client_id', array('client_id' => $this->id));
+                Connection::send($connection, 'set_client_id', ['client_id' => $this->id]);
                 $this->connection[$server] = $connection;
             } catch (\Exception $exception) {
                 $this->retryConn[$server] = time();
@@ -317,10 +322,13 @@ class Worker implements ServerSetting
         }
     }
 
+    /**
+     * @throws Exception
+     */
     public function registerFunctionsToOpenedConnections()
     {
         foreach (array_keys($this->functions) as $gearmanFunction) {
-            $params = array('func' => $gearmanFunction);
+            $params = ['func' => $gearmanFunction];
             $call = isset($params['timeout']) ? 'can_do_timeout' : 'can_do';
 
             foreach ($this->connection as $connection) {
@@ -338,9 +346,9 @@ class Worker implements ServerSetting
      *
      * @param resource $socket The socket to work on
      *
-     * @throws \MHlavac\Gearman\Exception
-     *
      * @return bool Returns true if work was done, false if not
+     *
+     * @throws Exception
      *
      * @see Net_Gearman_Connection::send()
      */
@@ -348,12 +356,12 @@ class Worker implements ServerSetting
     {
         Connection::send($socket, 'grab_job');
 
-        $resp = array('function' => 'noop');
+        $resp = ['function' => 'noop'];
         while (count($resp) && $resp['function'] == 'noop') {
             $resp = Connection::blockingRead($socket);
         }
 
-        if (in_array($resp['function'], array('noop', 'no_job'))) {
+        if (in_array($resp['function'], ['noop', 'no_job'])) {
             return false;
         }
 
@@ -363,10 +371,9 @@ class Worker implements ServerSetting
 
         $name = $resp['data']['func'];
         $handle = $resp['data']['handle'];
-        $arg = array();
+        $arg = [];
 
-        if (isset($resp['data']['arg']) &&
-            Connection::stringLength($resp['data']['arg'])) {
+        if (isset($resp['data']['arg']) && Connection::stringLength($resp['data']['arg'])) {
             $arg = json_decode($resp['data']['arg'], true);
             if ($arg === null) {
                 $arg = $resp['data']['arg'];
@@ -389,44 +396,45 @@ class Worker implements ServerSetting
             $this->callFailCallbacks($handle, $name, $e);
         }
 
-        // Force the job's destructor to run
-        $job = null;
-
         return true;
     }
 
     /**
      * Update Gearman with your job's status.
      *
-     * @param int $numerator   The numerator (e.g. 1)
-     * @param int $denominator The denominator  (e.g. 100)
+     * @param resource $socket
+     * @param string $handle
+     * @param int $numerator The numerator (e.g. 1)
+     * @param int $denominator The denominator (e.g. 100)
      *
-     * @see MHlavac\Gearman\Connection::send()
+     * @throws Exception
+     * @see \Vectorface\Gearman\Connection::send()
      */
-    public function jobStatus($numerator, $denominator)
+    public function jobStatus($socket, $handle, $numerator, $denominator)
     {
-        Connection::send($this->conn, 'work_status', array(
-            'handle' => $this->handle,
+        Connection::send($socket, 'work_status', [
+            'handle' => $handle,
             'numerator' => $numerator,
             'denominator' => $denominator,
-        ));
+        ]);
     }
 
     /**
      * Mark your job as complete with its status.
      *
      * @param resource $socket
-     * @param string   $handle
-     * @param array    $result Result of your job
+     * @param string $handle
+     * @param array $result Result of your job
      *
-     * @see MHlavac\Gearman\Connection::send()
+     * @throws Exception
+     * @see \Vectorface\Gearman\Connection::send()
      */
     private function jobComplete($socket, $handle, $result)
     {
-        Connection::send($socket, 'work_complete', array(
+        Connection::send($socket, 'work_complete', [
             'handle' => $handle,
             'result' => $result,
-        ));
+        ]);
     }
 
     /**
@@ -437,22 +445,23 @@ class Worker implements ServerSetting
      * (and the client by proxy) that the job has failed.
      *
      * @param resource $socket
-     * @param string   $handle
+     * @param string $handle
      *
-     * @see MHlavac\Gearman\Connection::send()
+     * @throws Exception
+     * @see \Vectorface\Gearman\Connection::send()
      */
     private function jobFail($socket, $handle)
     {
-        Connection::send($socket, 'work_fail', array(
+        Connection::send($socket, 'work_fail', [
             'handle' => $handle,
-        ));
+        ]);
     }
 
     /**
      * @param callback $callback
      * @param int      $type
      *
-     * @throws \MHlavac\Gearman\Exception When an invalid callback or type is specified.
+     * @throws Exception When an invalid callback or type is specified.
      */
     public function attachCallback($callback, $type = self::JOB_COMPLETE)
     {

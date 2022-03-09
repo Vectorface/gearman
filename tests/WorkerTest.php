@@ -1,16 +1,20 @@
 <?php
-namespace MHlavac\Gearman\tests;
 
-use MHlavac\Gearman\Worker;
+namespace Vectorface\Gearman\tests;
 
-class WorkerTest extends \PHPUnit_Framework_TestCase
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+use Vectorface\Gearman\Exception;
+use Vectorface\Gearman\Worker;
+
+class WorkerTest extends TestCase
 {
     /**
      * @var Worker
      */
     protected $worker;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->worker = new Worker();
     }
@@ -24,20 +28,18 @@ class WorkerTest extends \PHPUnit_Framework_TestCase
 
         $this->worker->addFunction($gearmanFunctionName, $callback);
 
-        $expectedFunctions = array(
-            $gearmanFunctionName => array(
+        $expectedFunctions = [
+            $gearmanFunctionName => [
                 'callback' => $callback,
-            ),
-        );
+            ],
+        ];
 
         $this->assertEquals($expectedFunctions, $this->worker->getFunctions());
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testAddFunctionThrowsExceptionIfFunctionIsAlreadyRegistered()
     {
+        $this->expectException(InvalidArgumentException::class);
         $this->worker->addFunction('gearmanFunction', 'echo');
         $this->worker->addFunction('gearmanFunction', 'var_dump');
     }
@@ -59,22 +61,20 @@ class WorkerTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(2, $this->worker->getFunctions());
 
         $this->worker->unregister($gearmanFunctionName);
-        $expectedFunctions = array(
-            $gearmanFunctionNameSecond => array(
+        $expectedFunctions = [
+            $gearmanFunctionNameSecond => [
                 'callback' => $callback,
                 'timeout' => $timeout,
-            ),
-        );
+            ],
+        ];
 
         $this->assertCount(1, $this->worker->getFunctions());
         $this->assertEquals($expectedFunctions, $this->worker->getFunctions());
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testUnregisterThrowsExceptionIfFunctionDoesNotExist()
     {
+        $this->expectException(InvalidArgumentException::class);
         $this->worker->unregister('gearmanFunction');
     }
 
@@ -93,9 +93,12 @@ class WorkerTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(0, $this->worker->getFunctions());
     }
 
+    /**
+     * @throws Exception
+     */
     public function testWorker()
     {
-        return $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
+        $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
 
         $function = function ($payload) {
             $result = str_replace('java', 'php', $payload);

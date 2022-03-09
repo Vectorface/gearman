@@ -1,9 +1,7 @@
 Net/Gearman
 ===========
 
-**⚠ This package is abandoned and no longer maintained, please check packagist for alternative Gearman PHP clients ⚠️**
-
-[![Build Status](https://secure.travis-ci.org/mhlavac/gearman.png?branch=master)](http://travis-ci.org/mhlavac/gearman)
+This is a fork of [mhlavac/gearman](https://github.com/mhlavac/gearman) which has unfortunately been abandoned.
 
 PHP library for interfacing with Danga's Gearman. Gearman is a system to farm out work to other machines,
 dispatching function calls to machines that are better suited to do work, to do work in parallel, to load
@@ -14,12 +12,12 @@ Installation
 
 Add following line to your composer.json
 ``` json
-"mhlavac/gearman": "dev"
+"vectorface/gearman": "^0.2"
 ``` 
 
 You can use following command
 ``` sh
-composer.phar require --dev mhlavac/geaman:dev
+composer.phar require --dev vectorface/geaman:^0.2
 ```
 
 Examples
@@ -30,7 +28,7 @@ Examples
 ``` php
 <?php
 
-$client = new \MHlavac\Gearman\Client();
+$client = new \Vectorface\Gearman\Client();
 $client->addServer();
 
 $result = $client->doNormal('replace', 'PHP is best programming language!');
@@ -46,7 +44,7 @@ $function = function($payload) {
     return str_replace('java', 'php', $payload);
 };
 
-$worker = new \MHlavac\Gearman\Worker();
+$worker = new \Vectorface\Gearman\Worker();
 $worker->addServer();
 $worker->addFunction('replace', $function);
 
@@ -61,7 +59,7 @@ This library uses [semantic versioning](http://semver.org/).
 License
 -------
 
-This library is under the new BSD license. See the complete license. [See the complete license](https://github.com/mhlavac/gearman/blob/master/LICENSE)
+This library is under the new BSD license. See the complete license. [See the complete license](https://github.com/vectorface/gearman/blob/master/LICENSE)
 
 About
 -----

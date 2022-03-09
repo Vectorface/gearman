@@ -1,5 +1,10 @@
 <?php
-namespace MHlavac\Gearman;
+
+namespace Vectorface\Gearman;
+
+use ArrayIterator;
+use Countable;
+use IteratorAggregate;
 
 /**
  * Interface for Danga's Gearman job scheduling system.
@@ -33,25 +38,25 @@ namespace MHlavac\Gearman;
  *
  * // This is the callback function for our tasks
  * function echoResult($result) {
- *     echo 'The result was: ' . $result . "\n";
+ *     echo "The result was: {$result}\n";
  * }
  *
  * // Job name is the key, arguments to job are in the value array
  * $jobs = array(
- *     'AddTwoNumbers' => array('1', '2'),
- *     'Multiply' => array('3', '4')
+ *     'AddTwoNumbers' => ['1', '2'],
+ *     'Multiply' => ['3', '4']
  * );
  *
- * $set = new \MHlavac\Gearman\Set();
+ * $set = new \Vectorface\Gearman\Set();
  * foreach ($jobs as $job => $args) {
- *     $task = new \MHlavac\Gearman\Task($job, $args);
+ *     $task = new \Vectorface\Gearman\Task($job, $args);
  *     $task->attachCallback('echoResult');
  *     $set->addTask($task);
  * }
  *
- * $client = new \MHlavac\Gearman\Client(array(
+ * $client = new \Vectorface\Gearman\Client([
  *     '127.0.0.1:7003', '127.0.0.1:7004'
- * ));
+ * ]);
  *
  * $client->runSet($set);
  *
@@ -67,9 +72,9 @@ namespace MHlavac\Gearman;
  * @version   Release: @package_version@
  *
  * @link      http://www.danga.com/gearman/
- * @see       \MHlavac\Gearman\Job\CommonJob, \MHlavac\Gearman\Worker
+ * @see       \Vectorface\Gearman\Job\CommonJob, \Vectorface\Gearman\Worker
  */
-class Set implements \IteratorAggregate, \Countable
+class Set implements IteratorAggregate, Countable
 {
     /**
      * Tasks count.
@@ -83,14 +88,14 @@ class Set implements \IteratorAggregate, \Countable
      *
      * @var Task[]
      */
-    public $tasks = array();
+    public $tasks = [];
 
     /**
      * Handle to task mapping.
      *
      * @var array
      */
-    public $handles = array();
+    public $handles = [];
 
     /**
      * Callback registered for set.
@@ -104,9 +109,9 @@ class Set implements \IteratorAggregate, \Countable
      *
      * @param array $tasks Array of tasks to run
      *
-     * @see \MHlavac\Gearman\Task
+     * @see \Vectorface\Gearman\Task
      */
-    public function __construct(array $tasks = array())
+    public function __construct(array $tasks = [])
     {
         foreach ($tasks as $task) {
             $this->addTask($task);
@@ -118,7 +123,7 @@ class Set implements \IteratorAggregate, \Countable
      *
      * @param Task $task Task to add to the set
      *
-     * @see \MHlavac\Gearman\Task, \MHlavac\Gearman\Set::$tasks
+     * @see \Vectorface\Gearman\Task, \Vectorface\Gearman\Set::$tasks
      */
     public function addTask(Task $task)
     {
@@ -133,9 +138,9 @@ class Set implements \IteratorAggregate, \Countable
      *
      * @param string $handle Handle of task to get
      *
-     * @throws \MHlavac\Gearman\Exception
-     *
      * @return object Instance of task
+     *@throws Exception
+     *
      */
     public function getTask($handle)
     {
@@ -153,28 +158,28 @@ class Set implements \IteratorAggregate, \Countable
     /**
      * Is this set finished running?
      *
-     * This function will return true if all of the tasks in the set have
-     * finished running. If they have we also run the set callbacks if there
-     * is one.
+     * This function will return true if all the tasks in the set have
+     * finished running. If they have we also run the set callbacks if
+     * there is one.
      *
      * @return bool
      */
     public function finished()
     {
-        if ($this->tasksCount == 0) {
-            if (isset($this->callback)) {
-                $results = array();
-                foreach ($this->tasks as $task) {
-                    $results[] = $task->result;
-                }
-
-                call_user_func($this->callback, $results);
-            }
-
-            return true;
+        if ($this->tasksCount != 0) {
+            return false;
         }
 
-        return false;
+        if (isset($this->callback)) {
+            $results = [];
+            foreach ($this->tasks as $task) {
+                $results[] = $task->result;
+            }
+
+            call_user_func($this->callback, $results);
+        }
+
+        return true;
     }
 
     /**
@@ -182,7 +187,7 @@ class Set implements \IteratorAggregate, \Countable
      *
      * @param callback $callback A valid PHP callback
      *
-     * @throws \MHlavac\Gearman\Exception
+     * @throws Exception
      */
     public function attachCallback($callback)
     {
@@ -196,11 +201,11 @@ class Set implements \IteratorAggregate, \Countable
     /**
      * Get the iterator.
      *
-     * @return \ArrayIterator Tasks
+     * @return ArrayIterator Tasks
      */
     public function getIterator()
     {
-        return new \ArrayIterator($this->tasks);
+        return new ArrayIterator($this->tasks);
     }
 
     /**

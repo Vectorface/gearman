@@ -1,5 +1,6 @@
 <?php
-namespace MHlavac\Gearman;
+
+namespace Vectorface\Gearman;
 
 /**
  * Interface for Danga's Gearman job scheduling system.
@@ -36,7 +37,7 @@ namespace MHlavac\Gearman;
  * @version   Release: @package_version@
  *
  * @link      http://www.danga.com/gearman/
- * @see       \MHlavac\Gearman\Set, \MHlavac\Gearman\Client
+ * @see       Set, Client
  */
 class Task
 {
@@ -52,24 +53,24 @@ class Task
      *
      * @var array
      */
-    public $arg = array();
+    public $arg = [];
 
     /**
      * Type of job.
      *
-     * Which type of job you wish this task to be ran as. Keep in mind that
+     * Which type of job you wish this task to be run as. Keep in mind that
      * background jobs are "fire and forget" and DO NOT return results to the
      * job server in a manner that you can actually retrieve.
      *
      * @var int
      *
-     * @see \MHlavac\Gearman\Task::JOB_NORMAL
-     * @see \MHlavac\Gearman\Task::JOB_BACKGROUND
-     * @see \MHlavac\Gearman\Task::JOB_EPOCH
-     * @see \MHlavac\Gearman\Task::JOB_HIGH
-     * @see \MHlavac\Gearman\Task::JOB_HIGH_BACKGROUND
-     * @see \MHlavac\Gearman\Task::JOB_LOW
-     * @see \MHlavac\Gearman\Task::JOB_LOW_BACKGROUND
+     * @see Task::JOB_NORMAL
+     * @see Task::JOB_BACKGROUND
+     * @see Task::JOB_EPOCH
+     * @see Task::JOB_HIGH
+     * @see Task::JOB_HIGH_BACKGROUND
+     * @see Task::JOB_LOW
+     * @see Task::JOB_LOW_BACKGROUND
      */
     public $type = self::JOB_NORMAL;
 
@@ -78,7 +79,7 @@ class Task
      *
      * @var string
      *
-     * @see \MHlavac\Gearman\Client
+     * @see Client
      */
     public $handle = '';
 
@@ -103,9 +104,9 @@ class Task
      *
      * @var bool
      *
-     * @see \MHlavac\Gearman\Set::finished()
-     * @see \MHlavac\Gearman\Task::complete()
-     * @see \MHlavac\Gearman\Task::fail()
+     * @see Set::finished()
+     * @see Task::complete()
+     * @see Task::fail()
      */
     public $finished = false;
 
@@ -131,23 +132,23 @@ class Task
      *
      * @var array
      *
-     * @see \MHlavac\Gearman\Task::attachCallback()
-     * @see \MHlavac\Gearman\Task::complete()
-     * @see \MHlavac\Gearman\Task::status()
-     * @see \MHlavac\Gearman\Task::fail()
+     * @see Task::attachCallback()
+     * @see Task::complete()
+     * @see Task::status()
+     * @see Task::fail()
      */
-    protected $callback = array(
-        self::TASK_COMPLETE => array(),
-        self::TASK_FAIL => array(),
-        self::TASK_STATUS => array(),
-    );
+    protected $callback = [
+        self::TASK_COMPLETE => [],
+        self::TASK_FAIL => [],
+        self::TASK_STATUS => [],
+    ];
 
     /**
      * Normal job.
      *
-     * Normal jobs are ran against a worker with the result being returned
+     * Normal jobs are run against a worker with the result being returned
      * all in the same thread (e.g. Your page will sit there waiting for the
-     * job to finish and return it's result).
+     * job to finish and return its result).
      *
      * @var int JOB_NORMAL
      */
@@ -204,37 +205,37 @@ class Task
     /**
      * Callback of type complete.
      *
-     * The callback provided should be ran when the task has been completed. It
+     * The callback provided should be run when the task has been completed. It
      * will be handed the result of the task as its only argument.
      *
      * @var int TASK_COMPLETE
      *
-     * @see \MHlavac\Gearman\Task::complete()
+     * @see Task::complete()
      */
     const TASK_COMPLETE = 1;
 
     /**
      * Callback of type fail.
      *
-     * The callback provided should be ran when the task has been reported to
+     * The callback provided should be run when the task has been reported to
      * have failed by Gearman. No arguments are provided.
      *
      * @var int TASK_FAIL
      *
-     * @see \MHlavac\Gearman\Task::fail()
+     * @see Task::fail()
      */
     const TASK_FAIL = 2;
 
     /**
      * Callback of type status.
      *
-     * The callback provided should be ran whenever the status of the task has
+     * The callback provided should be run whenever the status of the task has
      * been updated. The numerator and denominator are passed as the only
      * two arguments.
      *
      * @var int TASK_STATUS
      *
-     * @see \MHlavac\Gearman\Task::status()
+     * @see Task::status()
      */
     const TASK_STATUS = 3;
 
@@ -244,12 +245,10 @@ class Task
      * @param string $func  Name of job to run
      * @param mixed  $arg   List of arguments for job
      * @param string $uniq  The unique id of the job
-     * @param int    $type  Type of job to run task as
-     * @param int    $epoch Time of job to run at (unix timestamp)
+     * @param int $type  Type of job to run task as
+     * @param int $epoch Time of job to run at (unix timestamp)
      *
-     * @throws \MHlavac\Gearman\Exception
-     *
-     * @return \MHlavac\Gearman\Task
+     * @throws Exception
      */
     public function __construct($func, $arg, $uniq = null, $type = self::JOB_NORMAL, $epoch = 0)
     {
@@ -269,9 +268,7 @@ class Task
         }
 
         if ($type > 7) {
-            throw new Exception(
-                "Unknown job type: {$type}. Please see \MHlavac\Gearman\Task::JOB_* constants."
-            );
+            throw new Exception("Unknown job type: {$type}. Please see Task::JOB_* constants.");
         }
 
         $this->type = $type;
@@ -283,10 +280,8 @@ class Task
      * @param callback $callback A valid PHP callback
      * @param int      $type     Type of callback
      *
-     * @throws \MHlavac\Gearman\Exception When the callback is invalid.
-     * @throws \MHlavac\Gearman\Exception When the callback's type is invalid.
-     *
      * @return $this
+     * @throws Exception When the callback is invalid.
      */
     public function attachCallback($callback, $type = self::TASK_COMPLETE)
     {
@@ -294,10 +289,7 @@ class Task
             throw new Exception('Invalid callback specified');
         }
 
-        if (!in_array(
-            $type,
-            array(self::TASK_COMPLETE, self::TASK_FAIL, self::TASK_STATUS)
-        )) {
+        if (!in_array($type, [self::TASK_COMPLETE, self::TASK_FAIL, self::TASK_STATUS])) {
             throw new Exception('Invalid callback type specified');
         }
 
@@ -324,7 +316,7 @@ class Task
      *
      * @param object $result JSON decoded result passed back
      *
-     * @see \MHlavac\Gearman\Task::attachCallback()
+     * @see Task::attachCallback()
      */
     public function complete($result)
     {
@@ -345,7 +337,7 @@ class Task
      *
      * Failure callbacks are passed the task object job that failed
      *
-     * @see \MHlavac\Gearman\Task::attachCallback()
+     * @see Task::attachCallback()
      */
     public function fail()
     {
@@ -368,7 +360,7 @@ class Task
      * @param int $numerator   The numerator from the status
      * @param int $denominator The denominator from the status
      *
-     * @see \MHlavac\Gearman\Task::attachCallback()
+     * @see Task::attachCallback()
      */
     public function status($numerator, $denominator)
     {
@@ -377,11 +369,13 @@ class Task
         }
 
         foreach ($this->callback[self::TASK_STATUS] as $callback) {
-            call_user_func($callback,
-                           $this->func,
-                           $this->handle,
-                           $numerator,
-                           $denominator);
+            call_user_func(
+                $callback,
+               $this->func,
+               $this->handle,
+               $numerator,
+               $denominator
+            );
         }
     }
 }

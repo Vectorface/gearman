@@ -1,5 +1,6 @@
 <?php
-namespace MHlavac\Gearman;
+
+namespace Vectorface\Gearman;
 
 /**
  * Interface for Danga's Gearman job scheduling system.
@@ -48,14 +49,14 @@ class Manager
      * @type int
      */
     const CONNECT_TIMEOUT = 5;
-    
+
     /**
      * Connection resource.
      *
      * @var resource Connection to Gearman server
      *
-     * @see MHlavac\Gearman\Manager::sendCommand()
-     * @see MHlavac\Gearman\Manager::recvCommand()
+     * @see \Vectorface\Gearman\Manager::sendCommand()
+     * @see \Vectorface\Gearman\Manager::recvCommand()
      */
     protected $conn = null;
 
@@ -63,13 +64,13 @@ class Manager
      * The server is shutdown.
      *
      * We obviously can't send more commands to a server after it's been shut
-     * down. This is set to true in MHlavac\Gearman\Manager::shutdown() and then
-     * checked in MHlavac\Gearman\Manager::sendCommand().
+     * down. This is set to true in \Vectorface\Gearman\Manager::shutdown() and then
+     * checked in \Vectorface\Gearman\Manager::sendCommand().
      *
      * @var bool
      */
     protected $shutdown = false;
-    
+
     /**
      * Last error code
      * @var int
@@ -88,29 +89,27 @@ class Manager
      * @param string $server  Host and port (e.g. 'localhost:7003')
      * @param int    $timeout Connection timeout
      *
-     * @throws \MHlavac\Gearman\Exception
+     * @throws Exception
      *
-     * @see \MHlavac\Gearman\Manager::$conn
+     * @see \Vectorface\Gearman\Manager::$conn
      */
     public function __construct($server, $timeout = self::CONNECT_TIMEOUT)
     {
         if (strpos($server, ':')) {
-            list($host, $port) = explode(':', $server);
+            [$host, $port] = explode(':', $server);
         } else {
             $host = $server;
             $port = Connection::DEFAULT_PORT;
         }
 
         if (!$this->conn = @fsockopen($host, $port, $this->errorCode, $this->errorMessage, $timeout)) {
-            throw new Exception(
-                sprintf(
-                    '[%s]: Could not connect to %s:%s. Server says: %s',
-                    $this->errorCode,
-                    $host,
-                    $port,
-                    $this->errorMessage
-                )
-            );
+            throw new Exception(sprintf(
+                '[%s]: Could not connect to %s:%s. Server says: %s',
+                $this->errorCode,
+                $host,
+                $port,
+                $this->errorMessage
+            ));
         }
     }
 
@@ -119,8 +118,9 @@ class Manager
      *
      * @return string
      *
-     * @see MHlavac\Gearman\Manager::sendCommand()
-     * @see MHlavac\Gearman\Manager::checkForError()
+     * @throws Exception
+     * @see \Vectorface\Gearman\Manager::checkForError()
+     * @see \Vectorface\Gearman\Manager::sendCommand()
      */
     public function version()
     {
@@ -138,9 +138,10 @@ class Manager
      *
      * @return bool
      *
-     * @see MHlavac\Gearman\Manager::sendCommand()
-     * @see MHlavac\Gearman\Manager::checkForError()
-     * @see MHlavac\Gearman\Manager::$shutdown
+     * @throws Exception
+     * @see \Vectorface\Gearman\Manager::checkForError()
+     * @see \Vectorface\Gearman\Manager::$shutdown
+     * @see \Vectorface\Gearman\Manager::sendCommand()
      */
     public function shutdown($graceful = false)
     {
@@ -160,15 +161,15 @@ class Manager
      * Returns the file descriptor, IP address, client ID and the abilities
      * that the worker has announced.
      *
-     * @throws \MHlavac\Gearman\Exception
-     *
      * @return array A list of workers connected to the server
+     *@throws Exception
+     *
      */
     public function workers()
     {
         $this->sendCommand('workers');
         $res = $this->recvCommand();
-        $workers = array();
+        $workers = [];
         $tmp = explode("\n", $res);
         foreach ($tmp as $t) {
             if (!Connection::stringLength($t)) {
@@ -180,12 +181,12 @@ class Manager
 
             $abilities = isset($info[1]) ? trim($info[1]) : '';
 
-            $workers[] = array(
+            $workers[] = [
                 'fd' => $fd,
                 'ip' => $ip,
                 'id' => $id,
-                'abilities' => empty($abilities) ? array() : explode(' ', $abilities),
-            );
+                'abilities' => empty($abilities) ? [] : explode(' ', $abilities),
+            ];
         }
 
         return $workers;
@@ -204,9 +205,9 @@ class Manager
      * @param string $function Name of function to set queue size for
      * @param int    $size     New size of queue
      *
-     * @throws \MHlavac\Gearman\Exception
-     *
      * @return bool
+     *@throws Exception
+     *
      */
     public function setMaxQueueSize($function, $size)
     {
@@ -218,7 +219,7 @@ class Manager
             throw new Exception('Invalid function name');
         }
 
-        $this->sendCommand('maxqueue ' . $function . ' ' . $size);
+        $this->sendCommand("maxqueue {$function} {$size}");
         $res = fgets($this->conn, 4096);
         $this->checkForError($res);
 
@@ -233,16 +234,16 @@ class Manager
      * many jobs are running and how many workers are capable of performing
      * that job.
      *
-     * @throws \MHlavac\Gearman\Exception
-     *
      * @return array An array keyed by function name
+     *@throws Exception
+     *
      */
     public function status()
     {
         $this->sendCommand('status');
         $res = $this->recvCommand();
 
-        $status = array();
+        $status = [];
         $tmp = explode("\n", $res);
         foreach ($tmp as $t) {
             if (!Connection::stringLength($t)) {
@@ -251,11 +252,11 @@ class Manager
 
             list($func, $inQueue, $jobsRunning, $capable) = explode("\t", $t);
 
-            $status[$func] = array(
+            $status[$func] = [
                 'in_queue' => $inQueue,
                 'jobs_running' => $jobsRunning,
                 'capable_workers' => $capable,
-            );
+            ];
         }
 
         return $status;
@@ -266,7 +267,7 @@ class Manager
      *
      * @param string $cmd The command to send
      *
-     * @throws \MHlavac\Gearman\Exception
+     * @throws Exception
      */
     protected function sendCommand($cmd)
     {
@@ -287,9 +288,9 @@ class Manager
      * in everything until ".\n". If the command being sent is NOT ended with
      * ".\n" DO NOT use this command.
      *
-     * @throws \MHlavac\Gearman\Exception
-     *
      * @return string
+     *@throws Exception
+     *
      */
     protected function recvCommand()
     {
@@ -316,17 +317,17 @@ class Manager
      *
      * @param string $data The returned data to check for an error
      *
-     * @throws \MHlavac\Gearman\Exception
+     * @throws Exception
      */
     protected function checkForError($data)
     {
         $data = trim($data);
         if (preg_match('/^ERR/', $data)) {
-            list(, $code, $msg) = explode(' ', $data);
+            [, $code, $message] = explode(' ', $data);
 
             $this->errorCode = urlencode($code);
             $this->errorMessage = $message;
-            
+
             throw new Exception($this->errorMessage, $this->errorCode);
         }
     }
@@ -334,7 +335,7 @@ class Manager
     /**
      * Disconnect from server.
      *
-     * @see MHlavac\Gearman\Manager::$conn
+     * @see \Vectorface\Gearman\Manager::$conn
      */
     public function disconnect()
     {

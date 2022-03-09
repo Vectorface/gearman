@@ -1,7 +1,8 @@
 <?php
-namespace MHlavac\Gearman\Exception;
 
-use MHlavac\Gearman\Exception;
+namespace Vectorface\Gearman\Exception;
+
+use Vectorface\Gearman\Exception;
 
 class CouldNotConnectException extends Exception
 {

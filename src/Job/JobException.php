@@ -1,7 +1,8 @@
 <?php
-namespace MHlavac\Gearman\Job;
 
-use MHlavac\Gearman\Exception;
+namespace Vectorface\Gearman\Job;
+
+use Vectorface\Gearman\Exception;
 
 /**
  * Interface for Danga's Gearman job scheduling system.

@@ -1,11 +1,14 @@
 <?php
-namespace MHlavac\Gearman\tests;
 
-use MHlavac\Gearman\Client;
-use MHlavac\Gearman\ServerSetting;
-use MHlavac\Gearman\Worker;
+namespace Vectorface\Gearman\tests;
 
-class ServerSettingTest extends \PHPUnit_Framework_TestCase
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+use Vectorface\Gearman\Client;
+use Vectorface\Gearman\ServerSetting;
+use Vectorface\Gearman\Worker;
+
+class ServerSettingTest extends TestCase
 {
     /**
      * @param ServerSetting $serverSetting
@@ -64,10 +67,11 @@ class ServerSettingTest extends \PHPUnit_Framework_TestCase
     /**
      * @param ServerSetting $serverSetting
      * @dataProvider serverSettingImplementationDataProvider
-     * @expectedException \InvalidArgumentException
+     *
      */
     public function testAddServerThrowsExceptionIfServerAlreadyExists(ServerSetting $serverSetting)
     {
+        $this->expectException(InvalidArgumentException::class);
         $serverSetting->addServer();
         $serverSetting->addServer();
     }
@@ -75,30 +79,33 @@ class ServerSettingTest extends \PHPUnit_Framework_TestCase
     /**
      * @param ServerSetting $serverSetting
      * @dataProvider serverSettingImplementationDataProvider
-     * @expectedException \InvalidArgumentException
+     *
      */
     public function testAddServerThrowsExceptionIfEmptyHostIsGiven(ServerSetting $serverSetting)
     {
+        $this->expectException(InvalidArgumentException::class);
         $serverSetting->addServer('');
     }
 
     /**
      * @param ServerSetting $serverSetting
      * @dataProvider serverSettingImplementationDataProvider
-     * @expectedException \InvalidArgumentException
+     *
      */
     public function testAddServerThrowsExceptionIfSpacesAreGivenAsHost(ServerSetting $serverSetting)
     {
+        $this->expectException(InvalidArgumentException::class);
         $serverSetting->addServer('      ');
     }
 
     /**
      * @param ServerSetting $serverSetting
      * @dataProvider serverSettingImplementationDataProvider
-     * @expectedException \InvalidArgumentException
+     *
      */
     public function testAddServerThrowsExceptionIfEmptyPortIsGiven(ServerSetting $serverSetting)
     {
+        $this->expectException(InvalidArgumentException::class);
         $serverSetting->addServer('localhost', 0);
     }
 
@@ -108,11 +115,11 @@ class ServerSettingTest extends \PHPUnit_Framework_TestCase
      */
     public function testAddServers(ServerSetting $serverSetting)
     {
-        $servers = array(
+        $servers = [
             'localhost',
             'localhost:1234',
             'example.com:4730',
-        );
+        ];
 
         $serverSetting->addServers($servers);
 
@@ -130,36 +137,36 @@ class ServerSettingTest extends \PHPUnit_Framework_TestCase
         $servers = 'localhost,localhost:1234,  example.com:4730';
         $serverSetting->addServers($servers);
 
-        $servers = array(
+        $servers = [
             'localhost:4730',
             'localhost:1234',
             'example.com:4730',
-        );
+        ];
         $this->assertEquals($servers, $serverSetting->getServers());
     }
 
     /**
      * @param ServerSetting $serverSetting
      * @dataProvider serverSettingImplementationDataProvider
-     * @expectedException \InvalidArgumentException
+     *
      */
     public function testAddServersThrowsExceptionIfServerAlreadyExists(ServerSetting $serverSetting)
     {
-        $servers = array(
+        $this->expectException(InvalidArgumentException::class);
+        $servers = [
             'localhost:4730',
-        );
+        ];
 
         $serverSetting
             ->addServer('localhost')
-            ->addServers($servers)
-        ;
+            ->addServers($servers);
     }
 
     public function serverSettingImplementationDataProvider()
     {
-        return array(
-            array(new Worker()),
-            array(new Client()),
-        );
+        return [
+            [new Worker()],
+            [new Client()],
+        ];
     }
 }

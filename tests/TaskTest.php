@@ -1,7 +1,10 @@
 <?php
-namespace MHlavac\Gearman\tests;
 
-use MHlavac\Gearman\Task;
+namespace Vectorface\Gearman\tests;
+
+use PHPUnit\Framework\TestCase;
+use Vectorface\Gearman\Exception;
+use Vectorface\Gearman\Task;
 
 /**
  * Net_Gearman_ConnectionTest.
@@ -18,64 +21,66 @@ use MHlavac\Gearman\Task;
  * @link       http://pear.php.net/package/Net_Gearman
  * @since      0.2.4
  */
-class TaskTest extends \PHPUnit_Framework_TestCase
+class TaskTest extends TestCase
 {
     /**
      * Unknown job type.
      *
-     * @expectedException MHlavac\Gearman\Exception
+     *
      */
     public function testExceptionFromConstruct()
     {
-        new Task('foo', array(), null, 8);
+        $this->expectException(Exception::class);
+        new Task('foo', [], null, 8);
     }
 
     /**
      * Test parameters.
+     *
+     * @throws Exception
      */
     public function testParameters()
     {
         $uniq = uniqid();
-        $task = new Task('foo', array('bar'), $uniq, 1);
+        $task = new Task('foo', ['bar'], $uniq, 1);
 
         $this->assertEquals('foo', $task->func);
-        $this->assertEquals(array('bar'), $task->arg);
+        $this->assertEquals(['bar'], $task->arg);
         $this->assertEquals($uniq, $task->uniq);
     }
 
-    /**
-     * @expectedException MHlavac\Gearman\Exception
-     */
     public function testAttachInvalidCallback()
     {
-        $task = new Task('foo', array());
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Invalid callback specified');
+        $task = new Task('foo', []);
         $task->attachCallback('func_bar');
     }
 
-    /**
-     * @expectedException MHlavac\Gearman\Exception
-     */
     public function testAttachInvalidCallbackType()
     {
-        $task = new Task('foo', array());
-        $this->assertInternalType('Net_Gearman_Task', $task->attachCallback('strlen', 666));
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Invalid callback type specified');
+        $task = new Task('foo', []);
+        $task->attachCallback('strlen', 666);
     }
 
     public static function callbackProvider()
     {
-        return array(
-            array('strlen',  Task::TASK_FAIL),
-            array('intval',  Task::TASK_COMPLETE),
-            array('explode', Task::TASK_STATUS),
-        );
+        return [
+            ['strlen',  Task::TASK_FAIL],
+            ['intval',  Task::TASK_COMPLETE],
+            ['explode', Task::TASK_STATUS],
+        ];
     }
 
     /**
      * @dataProvider callbackProvider
+     * @throws Exception
      */
     public function testAttachCallback($func, $type)
     {
-        $task = new Task('foo', array());
+        $task = new Task('foo', []);
         $task->attachCallback($func, $type);
 
         $callbacks = $task->getCallbacks();
@@ -85,15 +90,17 @@ class TaskTest extends \PHPUnit_Framework_TestCase
 
     /**
      * Run the complete callback.
+     *
+     * @throws Exception
      */
     public function testCompleteCallback()
     {
-        $task = new Task('foo', array('foo' => 'bar'));
+        $task = new Task('foo', ['foo' => 'bar']);
 
-        $this->assertEquals(null, $task->complete('foo'));
+        $task->complete((object)['foo']);
 
         // Attach a callback for real
-        $task->attachCallback(array($this, 'Net_Gearman_TaskTest_testCallBack'));
+        $task->attachCallback([$this, 'Net_Gearman_TaskTest_testCallBack']);
 
         // build result and call complete again
         $json = json_decode('{"foo":"bar"}');
@@ -102,7 +109,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($json, $task->result);
 
         $this->assertEquals(
-            array('func' => 'foo', 'handle' => '', 'result' => $json),
+            ['func' => 'foo', 'handle' => '', 'result' => $json],
             $GLOBALS['Net_Gearman_TaskTest']
         );
 
@@ -118,10 +125,10 @@ class TaskTest extends \PHPUnit_Framework_TestCase
      */
     public function Net_Gearman_TaskTest_testCallBack($func, $handle, $result)
     {
-        $GLOBALS['Net_Gearman_TaskTest'] = array(
+        $GLOBALS['Net_Gearman_TaskTest'] = [
             'func' => $func,
             'handle' => $handle,
             'result' => $result,
-        );
+        ];
     }
 }

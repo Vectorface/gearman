@@ -1,7 +1,10 @@
 <?php
-namespace MHlavac\Gearman\tests;
 
-use MHlavac\Gearman\Connection;
+namespace Vectorface\Gearman\tests;
+
+use Vectorface\Gearman\Exception;
+use PHPUnit\Framework\TestCase;
+use Vectorface\Gearman\Connection;
 
 /**
  * @category   Testing
@@ -14,7 +17,7 @@ use MHlavac\Gearman\Connection;
  * @link       http://pear.php.net/package/Net_Gearman
  * @since      0.2.4
  */
-class ConnectionTest extends \PHPUnit_Framework_TestCase
+class ConnectionTest extends TestCase
 {
     /**
      * When no server is supplied, it should connect to localhost:4730.
@@ -23,11 +26,11 @@ class ConnectionTest extends \PHPUnit_Framework_TestCase
     {
         try {
             $connection = Connection::connect();
-        } catch (\MHlavac\Gearman\Exception $exception) {
-            return $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
+        } catch (Exception $exception) {
+            $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
         }
 
-        $this->assertInternalType('resource', $connection);
+        $this->assertIsResource($connection);
         $this->assertEquals('socket', strtolower(get_resource_type($connection)));
 
         $this->assertTrue(Connection::isConnected($connection));
@@ -39,11 +42,11 @@ class ConnectionTest extends \PHPUnit_Framework_TestCase
     {
         try {
             $connection = Connection::connect();
-        } catch (\MHlavac\Gearman\Exception $exception) {
-            return $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
+        } catch (Exception $exception) {
+            $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
         }
 
-        Connection::send($connection, 'echo_req', array('text' => 'foobar'));
+        Connection::send($connection, 'echo_req', ['text' => 'foobar']);
 
         do {
             $ret = Connection::read($connection);
@@ -51,11 +54,11 @@ class ConnectionTest extends \PHPUnit_Framework_TestCase
 
         Connection::close($connection);
 
-        $this->assertInternalType('array', $ret);
+        $this->assertIsArray($ret);
         $this->assertEquals('echo_res', $ret['function']);
         $this->assertEquals(17, $ret['type']);
 
-        $this->assertInternalType('array', $ret['data']);
+        $this->assertIsArray($ret['data']);
         $this->assertEquals('foobar', $ret['data']['text']);
     }
 }

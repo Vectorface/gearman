@@ -1,5 +1,8 @@
 <?php
-namespace MHlavac\Gearman;
+
+namespace Vectorface\Gearman;
+
+use InvalidArgumentException;
 
 interface ServerSetting
 {
@@ -12,7 +15,7 @@ interface ServerSetting
      * @param string $host
      * @param int    $port
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      *
      * @return self
      */
@@ -21,7 +24,7 @@ interface ServerSetting
     /**
      * @param string|array $servers Servers separated with comma, or array of servers
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      *
      * @return self
      */
