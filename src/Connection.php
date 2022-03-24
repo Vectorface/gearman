@@ -22,6 +22,7 @@ namespace Vectorface\Gearman;
  * @link      http://pear.php.net/package/Net_Gearman
  * @link      http://www.danga.com/gearman/
  */
+use Socket;
 use Vectorface\Gearman\Exception\CouldNotConnectException;
 
 /**
@@ -52,33 +53,33 @@ class Connection
      * @see \Vectorface\Gearman\Connection::connect()
      */
     protected static $commands = [
-        'can_do' => [1, ['func']],
-        'can_do_timeout' => [23, ['func', 'timeout']],
-        'cant_do' => [2, ['func']],
-        'reset_abilities' => [3, []],
-        'set_client_id' => [22, ['client_id']],
-        'pre_sleep' => [4, []],
-        'noop' => [6, []],
-        'submit_job' => [7, ['func', 'uniq', 'arg']],
-        'submit_job_high' => [21, ['func', 'uniq', 'arg']],
-        'submit_job_bg' => [18, ['func', 'uniq', 'arg']],
-        'submit_job_epoch' => [36, ['func', 'uniq', 'epoch','arg']],
+        'can_do'             => [1, ['func']],
+        'can_do_timeout'     => [23, ['func', 'timeout']],
+        'cant_do'            => [2, ['func']],
+        'reset_abilities'    => [3, []],
+        'set_client_id'      => [22, ['client_id']],
+        'pre_sleep'          => [4, []],
+        'noop'               => [6, []],
+        'submit_job'         => [7, ['func', 'uniq', 'arg']],
+        'submit_job_high'    => [21, ['func', 'uniq', 'arg']],
+        'submit_job_bg'      => [18, ['func', 'uniq', 'arg']],
+        'submit_job_epoch'   => [36, ['func', 'uniq', 'epoch','arg']],
         'submit_job_high_bg' => [32, ['func', 'uniq', 'arg']],
-        'submit_job_low' => [33, ['func', 'uniq', 'arg']],
-        'submit_job_low_bg' => [34, ['func', 'uniq', 'arg']],
-        'job_created' => [8, ['handle']],
-        'grab_job' => [9, []],
-        'no_job' => [10, []],
-        'job_assign' => [11, ['handle', 'func', 'arg']],
-        'work_status' => [12, ['handle', 'numerator', 'denominator']],
-        'work_complete' => [13, ['handle', 'result']],
-        'work_fail' => [14, ['handle']],
-        'get_status' => [15, ['handle']],
-        'status_res' => [20, ['handle', 'known', 'running', 'numerator', 'denominator']],
-        'echo_req' => [16, ['text']],
-        'echo_res' => [17, ['text']],
-        'error' => [19, ['err_code', 'err_text']],
-        'all_yours' => [24, []],
+        'submit_job_low'     => [33, ['func', 'uniq', 'arg']],
+        'submit_job_low_bg'  => [34, ['func', 'uniq', 'arg']],
+        'job_created'        => [8, ['handle']],
+        'grab_job'           => [9, []],
+        'no_job'             => [10, []],
+        'job_assign'         => [11, ['handle', 'func', 'arg']],
+        'work_status'        => [12, ['handle', 'numerator', 'denominator']],
+        'work_complete'      => [13, ['handle', 'result']],
+        'work_fail'          => [14, ['handle']],
+        'get_status'         => [15, ['handle']],
+        'status_res'         => [20, ['handle', 'known', 'running', 'numerator', 'denominator']],
+        'echo_req'           => [16, ['text']],
+        'echo_res'           => [17, ['text']],
+        'error'              => [19, ['err_code', 'err_text']],
+        'all_yours'          => [24, []],
     ];
 
     const DEFAULT_PORT = 4730;
@@ -132,7 +133,7 @@ class Connection
      * @param string $host    e.g. 127.0.0.1 or 127.0.0.1:7003
      * @param int    $timeout Timeout in milliseconds
      *
-     * @return Socket A connection to a Gearman server
+     * @return resource|Socket A connection to a Gearman server
      *
      * @throws Exception when it can't connect to server
      *
@@ -186,9 +187,9 @@ class Connection
      * parameters (in key value pairings) and packs it all up to send across
      * the socket.
      *
-     * @param Socket $socket  The socket to send the command to
-     * @param string   $command Command to send (e.g. 'can_do')
-     * @param array    $params  Params to send
+     * @param resource|Socket $socket The socket to send the command to
+     * @param string $command Command to send (e.g. 'can_do')
+     * @param array $params Params to send
      *
      * @throws Exception on invalid command or unable to write
      *
@@ -251,7 +252,7 @@ class Connection
     /**
      * Read command from Gearman.
      *
-     * @param Socket $socket The socket to read from
+     * @param resource|Socket $socket The socket to read from
      *
      * @return array Result read back from Gearman
      *@throws Exception connection issues or invalid responses
@@ -265,8 +266,7 @@ class Connection
         do {
             $buf = socket_read($socket, 12 - self::stringLength($header));
             $header .= $buf;
-        } while ($buf !== false &&
-                 $buf !== '' && self::stringLength($header) < 12);
+        } while ($buf !== false && $buf !== '' && self::stringLength($header) < 12);
 
         if ($buf === '') {
             throw new Exception('Connection was reset');
@@ -309,16 +309,16 @@ class Connection
 
         return [
             'function' => self::$magic[$resp['type']][0],
-            'type' => $resp['type'],
-            'data' => $return,
+            'type'     => $resp['type'],
+            'data'     => $return,
         ];
     }
 
     /**
      * Blocking socket read.
      *
-     * @param Socket $socket  The socket to read from
-     * @param float    $timeout The timeout for the read
+     * @param resource|Socket $socket The socket to read from
+     * @param float $timeout The timeout for the read
      *
      * @return array
      *@throws Exception on timeouts
@@ -353,11 +353,11 @@ class Connection
     /**
      * Close the connection.
      *
-     * @param Socket $socket The connection/socket to close
+     * @param resource|Socket $socket The connection/socket to close
      */
     public static function close($socket)
     {
-        if (is_resource($socket)) {
+        if ($socket !== false) {
             socket_close($socket);
         }
     }
@@ -365,15 +365,13 @@ class Connection
     /**
      * Are we connected?
      *
-     * @param Socket $conn The connection/socket to check
+     * @param resource|Socket $socket The socket to check
      *
      * @return bool False if we aren't connected
      */
-    public static function isConnected($conn)
+    public static function isConnected($socket)
     {
-        return (is_null($conn) !== true &&
-                is_object($conn) === true &&
-                get_class($conn) === 'Socket');
+        return $conn !== false;
     }
 
     /**
