@@ -132,7 +132,7 @@ class Connection
      * @param string $host    e.g. 127.0.0.1 or 127.0.0.1:7003
      * @param int    $timeout Timeout in milliseconds
      *
-     * @return resource A connection to a Gearman server
+     * @return Socket A connection to a Gearman server
      *
      * @throws Exception when it can't connect to server
      *
@@ -186,7 +186,7 @@ class Connection
      * parameters (in key value pairings) and packs it all up to send across
      * the socket.
      *
-     * @param resource $socket  The socket to send the command to
+     * @param Socket $socket  The socket to send the command to
      * @param string   $command Command to send (e.g. 'can_do')
      * @param array    $params  Params to send
      *
@@ -251,7 +251,7 @@ class Connection
     /**
      * Read command from Gearman.
      *
-     * @param resource $socket The socket to read from
+     * @param Socket $socket The socket to read from
      *
      * @return array Result read back from Gearman
      *@throws Exception connection issues or invalid responses
@@ -317,7 +317,7 @@ class Connection
     /**
      * Blocking socket read.
      *
-     * @param resource $socket  The socket to read from
+     * @param Socket $socket  The socket to read from
      * @param float    $timeout The timeout for the read
      *
      * @return array
@@ -353,7 +353,7 @@ class Connection
     /**
      * Close the connection.
      *
-     * @param resource $socket The connection/socket to close
+     * @param Socket $socket The connection/socket to close
      */
     public static function close($socket)
     {
@@ -365,15 +365,15 @@ class Connection
     /**
      * Are we connected?
      *
-     * @param resource $conn The connection/socket to check
+     * @param Socket $conn The connection/socket to check
      *
      * @return bool False if we aren't connected
      */
     public static function isConnected($conn)
     {
         return (is_null($conn) !== true &&
-                is_resource($conn) === true &&
-                strtolower(get_resource_type($conn)) == 'socket');
+                is_object($conn) === true &&
+                get_class($conn) === 'Socket');
     }
 
     /**
