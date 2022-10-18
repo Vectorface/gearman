@@ -174,7 +174,8 @@ class Connection
             );
         }
 
-        self::$waiting[spl_object_id($socket)] = [];
+        $key = is_object($socket) ? spl_object_id($socket) : intval($socket);
+        self::$waiting[$key] = [];
 
         return $socket;
     }
@@ -371,7 +372,7 @@ class Connection
      */
     public static function isConnected($socket)
     {
-        return $conn !== false;
+        return $socket !== false;
     }
 
     /**
