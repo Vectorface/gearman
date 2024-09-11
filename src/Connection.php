@@ -2,6 +2,9 @@
 
 namespace Vectorface\Gearman;
 
+use Socket;
+use Vectorface\Gearman\Exception\CouldNotConnectException;
+
 /**
  * Interface for Danga's Gearman job scheduling system.
  *
@@ -22,8 +25,6 @@ namespace Vectorface\Gearman;
  * @link      http://pear.php.net/package/Net_Gearman
  * @link      http://www.danga.com/gearman/
  */
-use Socket;
-use Vectorface\Gearman\Exception\CouldNotConnectException;
 
 /**
  * The base connection class.
@@ -47,12 +48,9 @@ class Connection
      * integer type (first key in second array) used in the binary header, and
      * the arguments / order of arguments to send/receive.
      *
-     * @var array
-     *
-     * @see \Vectorface\Gearman\Connection::$magic
-     * @see \Vectorface\Gearman\Connection::connect()
+     * @see Connection::connect
      */
-    protected static $commands = [
+    protected static array $commands = [
         'can_do'             => [1, ['func']],
         'can_do_timeout'     => [23, ['func', 'timeout']],
         'cant_do'            => [2, ['func']],
@@ -90,12 +88,9 @@ class Connection
      * This is the same as the \Vectorface\Gearman\Connection::$commands array only
      * it's keyed by the magic (integer value) value of the command.
      *
-     * @var array
-     *
-     * @see \Vectorface\Gearman\Connection::$commands
-     * @see \Vectorface\Gearman\Connection::connect()
+     * @see Connection::connect
      */
-    protected static $magic = [];
+    protected static array $magic = [];
 
     /**
      * Tasks waiting for a handle.
@@ -103,25 +98,14 @@ class Connection
      * Tasks are popped onto this queue as they're submitted so that they can
      * later be popped off of the queue once a handle has been assigned via
      * the job_created command.
-     *
-     * @var array
-     * @static
      */
-    public static $waiting = [];
+    public static array $waiting = [];
 
-    /**
-     * Is PHP's multibyte overload turned on?
-     *
-     * @var int
-     */
-    protected static $multiByteSupport = null;
+    /** Is PHP's multibyte overload turned on? */
+    protected static ?int $multiByteSupport = null;
 
-    /**
-     * Constructor.
-     */
     final private function __construct()
     {
-        // Don't allow this class to be instantiated
     }
 
     /**
@@ -130,18 +114,15 @@ class Connection
      * Opens the socket to the Gearman Job server. It throws an exception if
      * a socket error occurs. Also populates \Vectorface\Gearman\Connection::$magic.
      *
-     * @param string $host    e.g. 127.0.0.1 or 127.0.0.1:7003
-     * @param int    $timeout Timeout in milliseconds
+     * @param string $host e.g. 127.0.0.1 or 127.0.0.1:7003
+     * @param int|null $timeout Timeout in milliseconds
      *
      * @return resource|Socket A connection to a Gearman server
      *
-     * @throws Exception when it can't connect to server
-     *
-     * @see \Vectorface\Gearman\Connection::$waiting
-     * @see \Vectorface\Gearman\Connection::$magic
-     * @see \Vectorface\Gearman\Connection::$commands
+     * @throws CouldNotConnectException
+     * @see Connection
      */
-    public static function connect($host = 'localhost', $timeout = 2000)
+    public static function connect(string $host = 'localhost', ?int $timeout = 2000)
     {
         if (!count(self::$magic)) {
             foreach (self::$commands as $cmd => $i) {
@@ -168,9 +149,9 @@ class Connection
 
         if (!$socket_connected) {
             $errno = socket_last_error($socket);
-            $errstr = socket_strerror($errno);
+            $errStr = socket_strerror($errno);
             throw new CouldNotConnectException(
-                "Can't connect to server ($errno: $errstr)"
+                "Can't connect to server ({$errno}: {$errStr})"
             );
         }
 
@@ -194,8 +175,7 @@ class Connection
      *
      * @throws Exception on invalid command or unable to write
      *
-     * @see \Vectorface\Gearman\Connection::$commands, \Vectorface\Gearman\Connection::$socket
-     *
+     * @see Connection
      */
     public static function send($socket, $command, array $params = [])
     {
@@ -243,9 +223,9 @@ class Connection
 
         if ($error === true) {
             $errno = socket_last_error($socket);
-            $errstr = socket_strerror($errno);
+            $errStr = socket_strerror($errno);
             throw new Exception(
-                "Could not write command to socket ($errno: $errstr)"
+                "Could not write command to socket ({$errno}: {$errStr})"
             );
         }
     }
@@ -256,12 +236,11 @@ class Connection
      * @param resource|Socket $socket The socket to read from
      *
      * @return array Result read back from Gearman
-     *@throws Exception connection issues or invalid responses
+     * @throws Exception connection issues or invalid responses
      *
-     * @see \Vectorface\Gearman\Connection::$magic
-     *
+     * @see Connection
      */
-    public static function read($socket)
+    public static function read($socket): array
     {
         $header = '';
         do {
@@ -273,7 +252,7 @@ class Connection
             throw new Exception('Connection was reset');
         }
 
-        if (self::stringLength($header) == 0) {
+        if (self::stringLength($header) === 0) {
             return [];
         }
         $resp = @unpack('a4magic/Ntype/Nlen', $header);
@@ -321,11 +300,9 @@ class Connection
      * @param resource|Socket $socket The socket to read from
      * @param float $timeout The timeout for the read
      *
-     * @return array
-     *@throws Exception on timeouts
-     *
+     * @throws Exception on timeouts
      */
-    public static function blockingRead($socket, $timeout = 500.0)
+    public static function blockingRead($socket, float $timeout = 500.0): array
     {
         static $cmds = [];
 
@@ -367,34 +344,28 @@ class Connection
      * Are we connected?
      *
      * @param resource|Socket $socket The socket to check
-     *
-     * @return bool False if we aren't connected
      */
-    public static function isConnected($socket)
+    public static function isConnected($socket): bool
     {
         return $socket !== false;
     }
 
     /**
-     * Determine if we should use mb_strlen or stock strlen.
+     * Use mb_strlen or stock strlen depending on support.
      *
      * @param string $value The string value to check
      *
-     * @return int Size of string
-     *
-     * @see \Vectorface\Gearman\Connection::$multiByteSupport
+     * @see Connection
      */
-    public static function stringLength($value)
+    public static function stringLength(string $value): int
     {
-        if (is_null(self::$multiByteSupport)) {
-            self::$multiByteSupport = intval(ini_get('mbstring.func_overload'));
+        if (self::$multiByteSupport === null) {
+            self::$multiByteSupport = (int)ini_get('mbstring.func_overload');
         }
-
         if (self::$multiByteSupport & 2) {
             return mb_strlen($value, '8bit');
-        } else {
-            return strlen($value);
         }
+        return strlen($value);
     }
 
     /**
@@ -406,16 +377,15 @@ class Connection
      *
      * @return string Portion of $str specified by $start and $length
      *
-     * @see \Vectorface\Gearman\Connection::$multiByteSupport
+     * @see Connection
      * @link http://us3.php.net/mb_substr
      * @link http://us3.php.net/substr
      */
-    public static function subString($str, $start, $length)
+    public static function subString(string $str, int $start, int $length): string
     {
-        if (is_null(self::$multiByteSupport)) {
-            self::$multiByteSupport = intval(ini_get('mbstring.func_overload'));
+        if (self::$multiByteSupport === null) {
+            self::$multiByteSupport = (int)ini_get('mbstring.func_overload');
         }
-
         if (self::$multiByteSupport & 2) {
             return mb_substr($str, $start, $length, '8bit');
         }

@@ -9,24 +9,17 @@ interface ServerSetting
     /**
      * @return string[]
      */
-    public function getServers();
+    public function getServers(): array;
 
     /**
-     * @param string $host
-     * @param int    $port
-     *
      * @throws InvalidArgumentException
-     *
-     * @return self
      */
-    public function addServer($host = 'localhost', $port = null);
+    public function addServer(string $host = 'localhost', ?int $port = null): self;
 
     /**
      * @param string|array $servers Servers separated with comma, or array of servers
      *
      * @throws InvalidArgumentException
-     *
-     * @return self
      */
-    public function addServers($servers);
+    public function addServers($servers): self;
 }

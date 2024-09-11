@@ -55,8 +55,8 @@ class Manager
      *
      * @var resource Connection to Gearman server
      *
-     * @see \Vectorface\Gearman\Manager::sendCommand()
-     * @see \Vectorface\Gearman\Manager::recvCommand()
+     * @see Manager::sendCommand
+     * @see Manager::recvCommand
      */
     protected $conn = null;
 
@@ -66,34 +66,23 @@ class Manager
      * We obviously can't send more commands to a server after it's been shut
      * down. This is set to true in \Vectorface\Gearman\Manager::shutdown() and then
      * checked in \Vectorface\Gearman\Manager::sendCommand().
-     *
-     * @var bool
      */
-    protected $shutdown = false;
+    protected bool $shutdown = false;
+
+    /** Last error code */
+    private int $errorCode = 0;
+
+    /** Last error message */
+    private ?string $errorMessage = null;
 
     /**
-     * Last error code
-     * @var int
-     */
-    private $errorCode = 0;
-
-    /**
-     * Last error message
-     * @var null|string
-     */
-    private $errorMessage = null;
-
-    /**
-     * Constructor.
-     *
-     * @param string $server  Host and port (e.g. 'localhost:7003')
-     * @param int    $timeout Connection timeout
+     * @param string $server Host and port (e.g. 'localhost:7003')
+     * @param int|null $timeout Connection timeout
      *
      * @throws Exception
-     *
-     * @see \Vectorface\Gearman\Manager::$conn
+     * @see Manager
      */
-    public function __construct($server, $timeout = self::CONNECT_TIMEOUT)
+    public function __construct(string $server, ?int $timeout = self::CONNECT_TIMEOUT)
     {
         if (strpos($server, ':')) {
             [$host, $port] = explode(':', $server);
@@ -119,8 +108,8 @@ class Manager
      * @return string
      *
      * @throws Exception
-     * @see \Vectorface\Gearman\Manager::checkForError()
-     * @see \Vectorface\Gearman\Manager::sendCommand()
+     * @see Manager::checkForError
+     * @see Manager::sendCommand
      */
     public function version()
     {
@@ -136,14 +125,11 @@ class Manager
      *
      * @param bool $graceful Whether it should be a graceful shutdown
      *
-     * @return bool
-     *
      * @throws Exception
-     * @see \Vectorface\Gearman\Manager::checkForError()
-     * @see \Vectorface\Gearman\Manager::$shutdown
-     * @see \Vectorface\Gearman\Manager::sendCommand()
+     * @see Manager::checkForError
+     * @see Manager::sendCommand
      */
-    public function shutdown($graceful = false)
+    public function shutdown(bool $graceful = false): bool
     {
         $cmd = ($graceful) ? 'shutdown graceful' : 'shutdown';
         $this->sendCommand($cmd);
@@ -335,7 +321,7 @@ class Manager
     /**
      * Disconnect from server.
      *
-     * @see \Vectorface\Gearman\Manager::$conn
+     * @see Manager
      */
     public function disconnect()
     {
