@@ -40,5 +40,11 @@
     },
     "autoload-dev": {
         "psr-4": { "Vectorface\\Gearman\\tests\\": "tests/" }
+    },
+    "scripts": {
+        "test": [
+            "@test-unit"
+        ],
+        "test-unit": "phpunit --color=always"
     }
 }
