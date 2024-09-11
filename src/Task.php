@@ -45,7 +45,7 @@ class Task
     public string $func = '';
 
     /** Arguments to pass to function/job */
-    public array $arg = [];
+    public mixed $arg = [];
 
     /**
      * Type of job.
@@ -206,7 +206,7 @@ class Task
      */
     public function __construct(
         string  $func,
-        array   $arg,
+        mixed   $arg,
         ?string $unique_id = null,
         ?int    $type = self::JOB_NORMAL,
         int     $epoch = 0

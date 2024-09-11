@@ -61,7 +61,7 @@ class Connection
         'submit_job'         => [7, ['func', 'uniq', 'arg']],
         'submit_job_high'    => [21, ['func', 'uniq', 'arg']],
         'submit_job_bg'      => [18, ['func', 'uniq', 'arg']],
-        'submit_job_epoch'   => [36, ['func', 'uniq', 'epoch','arg']],
+        'submit_job_epoch'   => [36, ['func', 'uniq', 'epoch', 'arg']],
         'submit_job_high_bg' => [32, ['func', 'uniq', 'arg']],
         'submit_job_low'     => [33, ['func', 'uniq', 'arg']],
         'submit_job_low_bg'  => [34, ['func', 'uniq', 'arg']],
@@ -155,7 +155,7 @@ class Connection
             );
         }
 
-        $key = is_object($socket) ? spl_object_id($socket) : intval($socket);
+        $key = is_object($socket) ? spl_object_id($socket) : (int)$socket;
         self::$waiting[$key] = [];
 
         return $socket;
@@ -208,14 +208,13 @@ class Connection
                 $cmdLength
             );
 
-            if ($check === false) {
-                if (socket_last_error($socket) != SOCKET_EAGAIN
-                    && socket_last_error($socket) != SOCKET_EWOULDBLOCK
-                    && socket_last_error($socket) != SOCKET_EINPROGRESS
-                ) {
-                    $error = true;
-                    break;
-                }
+            if ($check === false
+                && socket_last_error($socket) !== SOCKET_EAGAIN
+                && socket_last_error($socket) !== SOCKET_EWOULDBLOCK
+                && socket_last_error($socket) !== SOCKET_EINPROGRESS
+            ) {
+                $error = true;
+                break;
             }
 
             $written += (int) $check;

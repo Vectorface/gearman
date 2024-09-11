@@ -280,7 +280,7 @@ class Client implements ServerSetting
             $unique = $this->generateUniqueId();
         }
 
-        $task = new Task($functionName, [$workload], $unique, $type, $epoch);
+        $task = new Task($functionName, $workload, $unique, $type, $epoch);
         $task->type = $type;
         $set = new Set();
         $set->addTask($task);
