@@ -9,10 +9,7 @@ use Vectorface\Gearman\Worker;
 
 class WorkerTest extends TestCase
 {
-    /**
-     * @var Worker
-     */
-    protected $worker;
+    protected Worker $worker;
 
     public function setUp(): void
     {
@@ -22,7 +19,7 @@ class WorkerTest extends TestCase
     public function testAddFunction()
     {
         $gearmanFunctionName = 'reverse';
-        $callback = function ($job) {
+        $callback = static function ($job) {
             return $job->workload();
         };
 
@@ -48,7 +45,7 @@ class WorkerTest extends TestCase
     {
         $gearmanFunctionName = 'reverse';
         $gearmanFunctionNameSecond = 'reverse2';
-        $callback = function ($job) {
+        $callback = static function ($job) {
             return $job->workload();
         };
 
@@ -100,14 +97,14 @@ class WorkerTest extends TestCase
     {
         $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
 
-        $function = function ($payload) {
+        $function = static function ($payload) {
             $result = str_replace('java', 'php', $payload);
 
             return str_replace('java', 'php', $payload);
         };
 
-        $function2 = function ($payload) {
-            while (false !== strpos($payload, 'java')) {
+        $function2 = static function ($payload) {
+            while (str_contains($payload, 'java')) {
                 $payload = preg_replace('/java/', 'php', $payload, 1);
                 sleep(1);
             }

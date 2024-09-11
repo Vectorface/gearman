@@ -41,19 +41,11 @@ namespace Vectorface\Gearman;
  */
 class Task
 {
-    /**
-     * The function/job to run.
-     *
-     * @var string
-     */
-    public $func = '';
+    /** The function/job to run */
+    public string $func = '';
 
-    /**
-     * Arguments to pass to function/job.
-     *
-     * @var array
-     */
-    public $arg = [];
+    /** Arguments to pass to function/job */
+    public array $arg = [];
 
     /**
      * Type of job.
@@ -61,8 +53,6 @@ class Task
      * Which type of job you wish this task to be run as. Keep in mind that
      * background jobs are "fire and forget" and DO NOT return results to the
      * job server in a manner that you can actually retrieve.
-     *
-     * @var int
      *
      * @see Task::JOB_NORMAL
      * @see Task::JOB_BACKGROUND
@@ -72,16 +62,10 @@ class Task
      * @see Task::JOB_LOW
      * @see Task::JOB_LOW_BACKGROUND
      */
-    public $type = self::JOB_NORMAL;
+    public int $type = self::JOB_NORMAL;
 
-    /**
-     * Handle returned from job server.
-     *
-     * @var string
-     *
-     * @see Client
-     */
-    public $handle = '';
+    /** Handle returned from job server, @see Client */
+    public string $handle = '';
 
     /**
      * The unique identifier for this job.
@@ -94,10 +78,8 @@ class Task
      * that job only once. If you send the job Sum with args 1, 2, 3 to the
      * server 10 times in a second Gearman will only run that job once and then
      * return the result 10 times.
-     *
-     * @var string
      */
-    public $uniq = '';
+    public string $uniq = '';
 
     /**
      * Is this task finished?
@@ -108,36 +90,30 @@ class Task
      * @see Task::complete()
      * @see Task::fail()
      */
-    public $finished = false;
+    public bool $finished = false;
 
     /**
      * The result returned from the worker.
-     *
-     * @var object
      */
-    public $result = '';
+    public string|object $result = '';
 
     /**
      * Unix timestamp.
      *
      * This allows you to schedule a background job to run at
      * a specific moment in time
-     *
-     * @var int
      */
-    public $epoch = 0;
+    public int $epoch = 0;
 
     /**
      * Callbacks registered for each state.
-     *
-     * @var array
      *
      * @see Task::attachCallback()
      * @see Task::complete()
      * @see Task::status()
      * @see Task::fail()
      */
-    protected $callback = [
+    protected array $callback = [
         self::TASK_COMPLETE => [],
         self::TASK_FAIL => [],
         self::TASK_STATUS => [],
@@ -149,8 +125,6 @@ class Task
      * Normal jobs are run against a worker with the result being returned
      * all in the same thread (e.g. Your page will sit there waiting for the
      * job to finish and return its result).
-     *
-     * @var int JOB_NORMAL
      */
     const JOB_NORMAL = 1;
 
@@ -159,36 +133,26 @@ class Task
      *
      * Background jobs in Gearman are "fire and forget". You can check a job's
      * status periodically, but you can't get a result back from it.
-     *
-     * @var int JOB_BACKGROUND
      */
     const JOB_BACKGROUND = 2;
 
     /**
      * High priority job.
-     *
-     * @var int JOB_HIGH
      */
     const JOB_HIGH = 3;
 
     /**
      * High priority, background job.
-     *
-     * @var int JOB_HIGH
      */
     const JOB_HIGH_BACKGROUND = 4;
 
     /**
      * LOW priority job.
-     *
-     * @var int JOB_LOW
      */
     const JOB_LOW = 5;
 
     /**
      * Low priority, background job.
-     *
-     * @var int JOB_LOW_BACKGROUND
      */
     const JOB_LOW_BACKGROUND = 6;
 
@@ -197,8 +161,6 @@ class Task
      *
      * Background jobs in Gearman are "fire and forget". You can check a job's
      * status periodically, but you can't get a result back from it.
-     *
-     * @var int JOB_EPOCH
      */
     const JOB_EPOCH = 7;
 
@@ -207,8 +169,6 @@ class Task
      *
      * The callback provided should be run when the task has been completed. It
      * will be handed the result of the task as its only argument.
-     *
-     * @var int TASK_COMPLETE
      *
      * @see Task::complete()
      */
@@ -219,8 +179,6 @@ class Task
      *
      * The callback provided should be run when the task has been reported to
      * have failed by Gearman. No arguments are provided.
-     *
-     * @var int TASK_FAIL
      *
      * @see Task::fail()
      */
@@ -233,37 +191,38 @@ class Task
      * been updated. The numerator and denominator are passed as the only
      * two arguments.
      *
-     * @var int TASK_STATUS
-     *
      * @see Task::status()
      */
     const TASK_STATUS = 3;
 
     /**
-     * Constructor.
-     *
-     * @param string $func  Name of job to run
-     * @param mixed  $arg   List of arguments for job
-     * @param string $uniq  The unique id of the job
-     * @param int $type  Type of job to run task as
+     * @param string $func Name of job to run
+     * @param mixed $arg List of arguments for job
+     * @param string|null $unique_id The unique id of the job
+     * @param int|null $type Type of job to run task as
      * @param int $epoch Time of job to run at (unix timestamp)
      *
      * @throws Exception
      */
-    public function __construct($func, $arg, $uniq = null, $type = self::JOB_NORMAL, $epoch = 0)
-    {
+    public function __construct(
+        string  $func,
+        array   $arg,
+        ?string $unique_id = null,
+        ?int    $type = self::JOB_NORMAL,
+        int     $epoch = 0
+    ) {
         $this->func = $func;
         $this->arg = $arg;
 
-        if (is_null($uniq)) {
+        if ($unique_id === null) {
             $this->uniq = md5($func . serialize($arg) . $type);
         } else {
-            $this->uniq = $uniq;
+            $this->uniq = $unique_id;
         }
 
         $type = (int) $type;
 
-        if ($type == self::JOB_EPOCH) {
+        if ($type === self::JOB_EPOCH) {
             $this->epoch = $epoch;
         }
 
@@ -371,10 +330,10 @@ class Task
         foreach ($this->callback[self::TASK_STATUS] as $callback) {
             call_user_func(
                 $callback,
-               $this->func,
-               $this->handle,
-               $numerator,
-               $denominator
+                $this->func,
+                $this->handle,
+                $numerator,
+                $denominator
             );
         }
     }

@@ -26,7 +26,7 @@ class ConnectionTest extends TestCase
     {
         try {
             $connection = Connection::connect();
-        } catch (Exception $exception) {
+        } catch (Exception) {
             $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
         }
 
@@ -38,11 +38,14 @@ class ConnectionTest extends TestCase
         Connection::close($connection);
     }
 
+    /**
+     * @throws Exception
+     */
     public function testSend()
     {
         try {
             $connection = Connection::connect();
-        } catch (Exception $exception) {
+        } catch (Exception) {
             $this->markTestSkipped('Skipped. You can try this test on your machine with gearman running.');
         }
 
@@ -50,7 +53,7 @@ class ConnectionTest extends TestCase
 
         do {
             $ret = Connection::read($connection);
-        } while (is_array($ret) && !count($ret));
+        } while (!count($ret));
 
         Connection::close($connection);
 

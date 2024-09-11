@@ -6,14 +6,12 @@ use Vectorface\Gearman\Client;
 use Vectorface\Gearman\Connection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
+use Vectorface\Gearman\Exception;
 use Vectorface\Gearman\Exception\CouldNotConnectException;
 
 class ClientTest extends TestCase
 {
-    /**
-     * @var Client
-     */
-    private $client;
+    private Client $client;
 
     public function setUp(): void
     {
@@ -21,6 +19,9 @@ class ClientTest extends TestCase
         $this->client->addServer();
     }
 
+    /**
+     * @throws Exception
+     */
     public function testClient()
     {
         $process = new Process(["gearman",  "-w", "-f", "replace", "--", "sed 's/__replace__/the best/g'"]);
@@ -32,7 +33,7 @@ class ClientTest extends TestCase
             $this->client->doBackground('replace', 'php is __replace__');
             $this->client->doHighBackground('replace', 'php is __replace__');
             $this->client->doLowBackground('replace', 'php is __replace__');
-        } catch (CouldNotConnectException $e) {
+        } catch (CouldNotConnectException) {
             $this->markTestSkipped('Skipped, please start Gearman on port ' . Connection::DEFAULT_PORT . ' to be able to run this test');
         }
 

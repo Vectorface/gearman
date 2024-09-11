@@ -45,39 +45,31 @@ use InvalidArgumentException;
  */
 class Client implements ServerSetting
 {
-    /**
-     * Our randomly selected connection.
-     *
-     * @var resource[] An array of open socket to Gearman
-     */
-    protected $conn = [];
+    /** Our randomly selected connection to Gearman */
+    protected array $conn = [];
 
-    /**
-     * @var string[] List of gearman servers
-     */
-    protected $servers = [];
+    /** List of gearman servers */
+    protected array $servers = [];
 
-    /**
-     * @var int The timeout for Gearman connections
-     */
-    protected $timeout = 1000;
+    /**The timeout for Gearman connections */
+    protected int $timeout = 1000;
 
     /**
      * @param int $timeout Timeout in microseconds
      *
-     * @see \Vectorface\Gearman\Connection
+     * @see Connection
      */
-    public function __construct($timeout = 1000)
+    public function __construct(int $timeout = 1000)
     {
         $this->timeout = $timeout;
     }
 
-    public function getServers()
+    public function getServers(): array
     {
         return array_keys($this->servers);
     }
 
-    public function addServers($servers)
+    public function addServers($servers): self
     {
         if (!is_array($servers)) {
             $servers = explode(',', $servers);
@@ -93,26 +85,25 @@ class Client implements ServerSetting
         return $this;
     }
 
-    public function addServer($host = 'localhost', $port = null)
+    public function addServer(string $host = 'localhost', ?int $port = null): self
     {
         $host = trim($host);
         if (empty($host)) {
-            throw new InvalidArgumentException("Invalid host '$host' given");
+            throw new InvalidArgumentException("Invalid host '{$host}' given");
         }
 
-        if (null === $port) {
+        if ($port === null) {
             $port = $this->getDefaultPort();
         } else {
-            $port = (int) $port;
             if (!$port > 0) {
-                throw new InvalidArgumentException("Invalid port '$port' given");
+                throw new InvalidArgumentException("Invalid port '{$port}' given");
             }
         }
 
         $server = $host . ':' . $port;
 
         if (isset($this->servers[$server])) {
-            throw new InvalidArgumentException("Server '$server' is already registered");
+            throw new InvalidArgumentException("Server '{$server}' is already registered");
         }
 
         $this->servers[$server] = true;
@@ -275,22 +266,21 @@ class Client implements ServerSetting
     }
 
     /**
-     * @param string $functionName
-     * @param string $workload
-     * @param string $unique
-     * @param int $type Type of job to run task as
      * @param int $epoch Time of job to run at (unix timestamp)
-     *
-     * @return Set
      * @throws Exception
      */
-    private function createSet($functionName, $workload, $unique = null, $type = Task::JOB_NORMAL, $epoch = 0)
-    {
-        if (null === $unique) {
+    private function createSet(
+        string $functionName,
+        string $workload,
+        ?string $unique = null,
+        int $type = Task::JOB_NORMAL,
+        int $epoch = 0
+    ): Set {
+        if ($unique === null) {
             $unique = $this->generateUniqueId();
         }
 
-        $task = new Task($functionName, $workload, $unique, $type, $epoch);
+        $task = new Task($functionName, [$workload], $unique, $type, $epoch);
         $task->type = $type;
         $set = new Set();
         $set->addTask($task);
@@ -298,10 +288,7 @@ class Client implements ServerSetting
         return $set;
     }
 
-    /**
-     * @return string
-     */
-    protected function generateUniqueId()
+    protected function generateUniqueId(): string
     {
         return getmypid() . '_' . uniqid();
     }
@@ -309,36 +296,20 @@ class Client implements ServerSetting
     /**
      * Submit a task to Gearman.
      *
-     * @param Task $task Task to submit to Gearman
-     *
      * @throws Exception
      * @see Task, Client::runSet()
      */
-    protected function submitTask(Task $task)
+    protected function submitTask(Task $task): void
     {
-        switch ($task->type) {
-        case Task::JOB_LOW:
-            $type = 'submit_job_low';
-            break;
-        case Task::JOB_LOW_BACKGROUND:
-            $type = 'submit_job_low_bg';
-            break;
-        case Task::JOB_HIGH_BACKGROUND:
-            $type = 'submit_job_high_bg';
-            break;
-        case Task::JOB_BACKGROUND:
-            $type = 'submit_job_bg';
-            break;
-            case Task::JOB_EPOCH:
-            $type = 'submit_job_epoch';
-            break;
-        case Task::JOB_HIGH:
-            $type = 'submit_job_high';
-            break;
-        default:
-            $type = 'submit_job';
-            break;
-        }
+        $type = match ($task->type) {
+            Task::JOB_LOW => 'submit_job_low',
+            Task::JOB_LOW_BACKGROUND => 'submit_job_low_bg',
+            Task::JOB_HIGH_BACKGROUND => 'submit_job_high_bg',
+            Task::JOB_BACKGROUND => 'submit_job_bg',
+            Task::JOB_EPOCH => 'submit_job_epoch',
+            Task::JOB_HIGH => 'submit_job_high',
+            default => 'submit_job',
+        };
 
         $arg = $task->arg;
 
@@ -365,14 +336,11 @@ class Client implements ServerSetting
 
     /**
      * Run a set of tasks.
-     *
-     * @param Set $set A set of tasks to run
-     * @param int $timeout Time in seconds for the socket timeout. Max is 10 seconds
-     *
+     * @param int|null $timeout Time in seconds for the socket timeout. Max is 10 seconds
      * @throws Exception
-     * @see Set, \Vectorface\Gearman\Task
+     * @see Set, Task
      */
-    public function runSet(Set $set, $timeout = null)
+    public function runSet(Set $set, ?int $timeout = null)
     {
         foreach ($this->getServers() as $server) {
             $conn = Connection::connect($server, $timeout);
@@ -414,10 +382,10 @@ class Client implements ServerSetting
                     $set->tasks[$k]->type == Task::JOB_LOW_BACKGROUND ||
                     $set->tasks[$k]->type == Task::JOB_EPOCH) {
                     $set->tasks[$k]->finished = true;
-                    --$set->tasksCount;
+                    $set->tasksCount--;
                 }
 
-                ++$t;
+                $t++;
             }
 
             $write = null;
@@ -436,13 +404,13 @@ class Client implements ServerSetting
     /**
      * Handle the response read in.
      *
-     * @param array    $resp  The raw array response
-     * @param resource $s     The socket
-     * @param Set      $tasks The tasks being run
+     * @param array    $resp   The raw array response
+     * @param resource $socket The socket
+     * @param Set      $tasks  The tasks being run
      *
      * @throws Exception
      */
-    protected function handleResponse($resp, $s, Set $tasks)
+    protected function handleResponse(array $resp, $socket, Set $tasks)
     {
         $task = null;
         if (isset($resp['data']['handle']) && $resp['function'] != 'job_created') {
@@ -464,7 +432,7 @@ class Client implements ServerSetting
             $task->fail();
             break;
         case 'job_created':
-            $key = is_object($s) ? spl_object_id($s) : intval($s);
+            $key = is_object($socket) ? spl_object_id($socket) : intval($socket);
             $task = array_shift(Connection::$waiting[$key]);
             $task->handle = $resp['data']['handle'];
             if ($task->type == Task::JOB_BACKGROUND) {
@@ -493,9 +461,6 @@ class Client implements ServerSetting
         }
     }
 
-    /**
-     * Destructor.
-     */
     public function __destruct()
     {
         $this->disconnect();

@@ -72,44 +72,25 @@ use IteratorAggregate;
  * @version   Release: @package_version@
  *
  * @link      http://www.danga.com/gearman/
- * @see       \Vectorface\Gearman\Job\CommonJob, \Vectorface\Gearman\Worker
+ * @see       \Vectorface\Gearman\Job\CommonJob, Worker
  */
 class Set implements IteratorAggregate, Countable
 {
-    /**
-     * Tasks count.
-     *
-     * @var int
-     */
-    public $tasksCount = 0;
+    /** Tasks count */
+    public int $tasksCount = 0;
+
+    /** @var Task[] Tasks to run */
+    public array $tasks = [];
+
+    /** Handle to task mapping */
+    public array $handles = [];
+
+    /** Callback registered for set */
+    protected mixed $callback = null;
 
     /**
-     * Tasks to run.
-     *
-     * @var Task[]
-     */
-    public $tasks = [];
-
-    /**
-     * Handle to task mapping.
-     *
-     * @var array
-     */
-    public $handles = [];
-
-    /**
-     * Callback registered for set.
-     *
-     * @var mixed
-     */
-    protected $callback = null;
-
-    /**
-     * Constructor.
-     *
      * @param array $tasks Array of tasks to run
-     *
-     * @see \Vectorface\Gearman\Task
+     * @see Task
      */
     public function __construct(array $tasks = [])
     {
@@ -120,29 +101,22 @@ class Set implements IteratorAggregate, Countable
 
     /**
      * Add a task to the set.
-     *
-     * @param Task $task Task to add to the set
-     *
-     * @see \Vectorface\Gearman\Task, \Vectorface\Gearman\Set::$tasks
+     * @see Task, Set
      */
     public function addTask(Task $task)
     {
         if (!isset($this->tasks[$task->uniq])) {
             $this->tasks[$task->uniq] = $task;
-            ++$this->tasksCount;
+            $this->tasksCount++;
         }
     }
 
     /**
      * Get a task.
      *
-     * @param string $handle Handle of task to get
-     *
-     * @return object Instance of task
-     *@throws Exception
-     *
+     * @throws Exception
      */
-    public function getTask($handle)
+    public function getTask(string $handle): Task
     {
         if (!isset($this->handles[$handle])) {
             throw new Exception('Unknown handle');
@@ -161,12 +135,10 @@ class Set implements IteratorAggregate, Countable
      * This function will return true if all the tasks in the set have
      * finished running. If they have we also run the set callbacks if
      * there is one.
-     *
-     * @return bool
      */
-    public function finished()
+    public function finished(): bool
     {
-        if ($this->tasksCount != 0) {
+        if ($this->tasksCount !== 0) {
             return false;
         }
 
@@ -185,25 +157,20 @@ class Set implements IteratorAggregate, Countable
     /**
      * Attach a callback to this set.
      *
-     * @param callback $callback A valid PHP callback
-     *
      * @throws Exception
      */
-    public function attachCallback($callback)
+    public function attachCallback(callable $callback)
     {
         if (!is_callable($callback)) {
             throw new Exception('Invalid callback specified');
         }
-
         $this->callback = $callback;
     }
 
     /**
      * Get the iterator.
-     *
-     * @return ArrayIterator Tasks
      */
-    public function getIterator()
+    public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->tasks);
     }
@@ -211,11 +178,9 @@ class Set implements IteratorAggregate, Countable
     /**
      * Get the task count.
      *
-     * @return int Number of tasks in the set
-     *
-     * @see    {@link Countable::count()}
+     * @see Countable::count()
      */
-    public function count()
+    public function count(): int
     {
         return $this->tasksCount;
     }
