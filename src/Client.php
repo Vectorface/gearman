@@ -342,14 +342,16 @@ class Client implements ServerSetting
      */
     public function runSet(Set $set, ?int $timeout = null)
     {
-        foreach ($this->getServers() as $server) {
-            $conn = Connection::connect($server, $timeout);
-            if (!Connection::isConnected($conn)) {
-                unset($this->servers[$server]);
-                continue;
-            }
+        if (empty($this->conn)) {
+            foreach ($this->getServers() as $server) {
+                $conn = Connection::connect($server, $timeout);
+                if (!Connection::isConnected($conn)) {
+                    unset($this->servers[$server]);
+                    continue;
+                }
 
-            $this->conn[] = $conn;
+                $this->conn[] = $conn;
+            }
         }
 
         $totalTasks = $set->tasksCount;
